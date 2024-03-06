@@ -15,7 +15,7 @@ def node_name(t):
 
 # Helper function to get CQ-type from a python value
 def numerical_type(v):
-    if type(v) == bool or type(v) == np.bool: return "cbit"
+    if type(v) == bool:                      return "cbit"
     if type(v) == int or type(v) == np.int64: return "int"
     if type(v) == float or type(v) == np.float64: return "float"
     raise Exception(f"Unrecognized numerical type {type(v)} for {v}")
