@@ -226,7 +226,7 @@ def PE_qupdate(q,env):
         match(rule):
             case ['gate','lval']:
                 [gate,lval] = q.children
-                (g,_) = PE_gate(gate, env)
+                g = PE_gate(gate, env)
                 (l,_,_,_) = PE_lval(lval, env)
                 result.children = [g,l]
                 #print(f"Replacing {showcq_qupdate(q)} with {showcq_qupdate(result)} (env={env})")
@@ -256,12 +256,12 @@ def PE_gate(g,env):
     try:
         match(rule):
             case ['NOT'] | ['H']: 
-                return (g,True)
+                return g
             case ['rgate',_]:
                 [rgate, angle_exp] = g.children
                 (a,a_static)       = PE_exp(angle_exp, env)
                 result.children    = [rgate,a]
-                return (result, a_static)
+                return result
             case _:
                 raise Exception(f"Unrecognized rule {rule} in gate-node {showcq_gate(g)}")
     except:
