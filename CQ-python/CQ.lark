@@ -1,0 +1,58 @@
+%import .expression (INT, FLOAT, BUILTIN_FUN1, BUILTIN_FUN2, NAMED_CONSTANT, PE,MD,AS,CMP, ID,  exp, lval)
+
+// A program is a sequence of procedure declarations. The first procedure is the entry point (like 'main' in C/C++).
+program: procedure+
+
+// A procedure declaration consists of a name, a list of parameters, and a statement
+procedure: ID "(" parameter_declarations ")" statement
+
+// Procedure parameter declarations of scalar variables and arrays
+parameter_declaration: TYPE ID
+|                      TYPE ID "[" (ID | INT) "]"
+
+// Problem 2.1: Implement the grammars for statements and declarations given in the problem set for 28/2
+// Statement can be an assignment, a unitary update of a qbit, a procedure call, a measurement, an if-then-else, a while loop, or a block
+statement:  lval EQ exp ";" // Assignment
+|           qupdate ";"     // Unitary update of qbit
+|           qupdate IF lval ";"
+|           procedure_call ";"
+|           MEASURE lval "->" lval ";"
+|           IF "(" exp ")" statement "else" statement
+|           WHILE "(" exp ")" statement
+|           block 
+
+
+// Declaration can be an uninitialized variable (scalar or array), implicitly initialized to 0;
+// or an initialized scalar variable, or an initialized array.
+declaration: TYPE lval ";" | TYPE ID "=" exp ";" | TYPE ID "[" INT "]" "=" "{" exps "}" ";"
+
+//type:  INT_TYPE | FLOAT_TYPE | CBIT_TYPE | QBIT_TYPE
+TYPE: "int" | "float" | "cbit" | "qbit"
+
+qupdate:        gate lval | lval SWAP lval 
+block:          "{" declarations statements "}" 
+procedure_call: "call" ID "(" lvals ")"
+gate: NOT | H | rgate "(" exp ")" 
+rgate: /R[xyz]/ 
+
+SWAP: "<>" | "swap"
+NOT: "not"
+H: "H"
+
+_list{x,separator}: (x (separator x)*)?
+
+lvals:                  _list{lval,","}
+exps:                   _list{exp,","}
+declarations:           declaration*
+statements:             statement*
+parameter_declarations: _list{parameter_declaration,","}
+
+MEASURE:    "measure"
+IF:         "if"
+WHILE:      "while"
+EQ:         "="
+
+%import common.WS           -> WHITESPACE
+%import common.C_COMMENT
+%ignore WHITESPACE
+%ignore C_COMMENT
