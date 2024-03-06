@@ -1,0 +1,23 @@
+?start: program
+
+%import .expression (INT, FLOAT, BUILTIN_FUN1, BUILTIN_FUN2, NAMED_CONSTANT, PE,MD,AS,CMP, ID,  exp, lval)
+
+// YOUR TASK IS TO WRITE THE REST
+
+_list{x,separator}: (x (separator x)*)?
+
+lvals:                  _list{lval,","}
+exps:                   _list{exp,","}
+declarations:           declaration*
+statements:             statement*
+parameter_declarations: _list{parameter_declaration,","}
+
+MEASURE:    "measure"
+IF:         "if"
+WHILE:      "while"
+EQ:         "="
+
+%import common.WS           -> WHITESPACE
+%import common.C_COMMENT
+%ignore WHITESPACE
+%ignore C_COMMENT
