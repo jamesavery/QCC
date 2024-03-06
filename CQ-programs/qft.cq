@@ -1,0 +1,25 @@
+/* qft.dq -- a quantum Fourier transform implemented in DQ */
+
+qft(qbit q[d])
+{
+  int i = 0;
+  while (i < d-1) {
+    call qft_factor(q,i);
+    i = i+1;
+  }
+}
+
+qft_factor(qbit q[d], int i)
+{
+  int j = i+1;
+  int angle = 2;
+  H q[i];
+  H q[i+1];
+
+  while(j<d){
+    Ry(2*pi/angle) q[i] if q[j];
+    angle = angle * 2;
+    j = j+1;    
+  }
+}
+  
