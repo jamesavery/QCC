@@ -31,7 +31,7 @@ def node_rule(v, node_type=""):
     return rule
 
 def is_numeric(x): 
-    return (type(x) == bool or type(x) == np.bool or 
+    return (type(x) == bool or 
             type(x) == int or type(x) == float or 
             type(x) == np.float64 or type(x) == np.int64)
 
