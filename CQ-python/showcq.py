@@ -19,7 +19,7 @@ def showcq_procedure(p):
             sparams = [showcq_parameter_declaration(d) for d in params.children]
             sparams = ",".join(sparams)
             sstat   = showcq_statement(stat)
-            return f"{fname}({sparams}){sstat})"
+            return f"{fname}({sparams}){sstat}"
         
         case _: 
             raise Exception(f"Unrecognized rule {rule} in procedure {p}")
@@ -164,7 +164,7 @@ def showcq_declaration(d,depth=0):
     match(rule):
         case ['TYPE',_]:     # Scalar or array-declaration without initialization (0-initialize)
             type, lval = d.children
-            return f"{prefix}{type} {showcq_lval(lval)}) ;"
+            return f"{prefix}{type} {showcq_lval(lval)} ;"
         
         case ['TYPE','ID',_]: # Scalar declaration with initialization
             type, name, exp = d.children
