@@ -105,6 +105,28 @@ def lookup_scope(l, env):
         if name in V: return len(env)-i-1
     return -1
 
+# Helper functions for keeping track of scope for unique variable naming:
+# used by vars.py and flatten.py
+def new_scope(scoped_name_env):
+    scoped_name_env[0]['?scope_id_max'] += 1
+    scope_id = scoped_name_env[0]['?scope_id_max']
+    return {'?scope_id': scope_id, '?scope_index': len(scoped_name_env)-1}
+
+def scope_id(lval,scoped_name_env):
+    scope_index = lookup_scope(lval,scoped_name_env)
+    return scoped_name_env[scope_index]['?scope_id']
+
+def scope_and_name(lval, scoped_name_env):
+    name = lval_name(lval)
+    scope_ix = lookup_scope(name,scoped_name_env)
+    scope_id = scoped_name_env[scope_ix]['?scope_id']
+    return (name, scope_id)
+
+def scoped_name(lval,scoped_name_env):
+    (name,scope_id) = scope_and_name(lval,scoped_name_env)
+    return f"{name}_{scope_id}" if scope_id > 0 else f"{name}"
+
+
 
 def max_type(t1,t2):
     try:
@@ -129,20 +151,28 @@ def make_procedure(name, parameters, statement):
     return Tree(Token('RULE', 'procedure'),  
                 [name, Tree(Token('RULE','parameter_declarations'),parameters), statement])   
 
-def make_skip_statement():
-    return make_block([],[],False)
-    #return Tree(Token('RULE','statements'), [Token('SKIP','skip')])
+def make_declaration(type, name):
+    type_base = array_base(type)
+    size = array_size(type)
+    if size == None: 
+        return Tree(Token('RULE', 'declaration'), [Token('TYPE', type_base), Token('ID', name)])
+    else:
+        return Tree(Token('RULE', 'declaration'), [Token('TYPE', type_base), Token('ID', name), Token('INT', size)])
 
-def make_block(declarations, statements, condense):
-    #print(f"Making block with {len(declarations)} declarations and {len(statements)} statements (condense = {condense})")
-#    if(condense):
-#        match(len(statements)):
- #           case 0: 
- #               return make_skip_statement()
- #           case 1: 
- #               return statements[0]
+def make_if(condition, then_block, else_block):
+    return Tree(Token('RULE', 'statement'), 
+                [Token('IF', 'if'), condition, then_block, else_block])
+                
+def make_while(condition, stat):
+    return Tree( Token('RULE', 'statement'),
+                [Token('WHILE', 'while'), condition, stat])
+
+def make_skip_statement():
+    return make_block([],[])
+
+def make_block(declarations, statements, condense="No longer used, kept for API compatibility"):
         
     return Tree(Token('RULE','statement'),[Tree(Token('RULE', 'block'), 
-                [Tree(Token('RULE', 'declarations'), [d for d in declarations if d != True]), 
-                 Tree(Token('RULE', 'statements'),   [s for s in statements   if s != True])])])
+                [Tree(Token('RULE', 'declarations'), declarations), 
+                 Tree(Token('RULE', 'statements'),   statements)])])
 
