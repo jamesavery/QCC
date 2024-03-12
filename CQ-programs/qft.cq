@@ -17,7 +17,7 @@ qft_factor(qbit q[d], int i)
   H q[i+1];
 
   while(j<d){
-    Ry(2*pi/angle) q[i] if q[j];
+    Rz(2*pi/angle) q[i] if q[j];
     angle = angle * 2;
     j = j+1;    
   }
