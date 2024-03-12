@@ -10,7 +10,6 @@ procedure: ID "(" parameter_declarations ")" statement
 parameter_declaration: TYPE ID
 |                      TYPE ID "[" (ID | INT) "]"
 
-// Problem 2.1: Implement the grammars for statements and declarations given in the problem set for 28/2
 // Statement can be an assignment, a unitary update of a qbit, a procedure call, a measurement, an if-then-else, a while loop, or a block
 statement:  lval EQ exp ";" // Assignment
 |           qupdate ";"     // Unitary update of qbit
@@ -20,6 +19,7 @@ statement:  lval EQ exp ";" // Assignment
 |           IF "(" exp ")" statement "else" statement
 |           WHILE "(" exp ")" statement
 |           block 
+
 
 
 // Declaration can be an uninitialized variable (scalar or array), implicitly initialized to 0;
@@ -33,7 +33,7 @@ qupdate:        gate lval | lval SWAP lval
 block:          "{" declarations statements "}" 
 procedure_call: "call" ID "(" lvals ")"
 gate: NOT | H | rgate "(" exp ")" 
-rgate: /R[xyz]/ 
+rgate: /(R[xyz]|P)/ 
 
 SWAP: "<>" | "swap"
 NOT: "not"
@@ -51,6 +51,7 @@ MEASURE:    "measure"
 IF:         "if"
 WHILE:      "while"
 EQ:         "="
+SKIP:        "skip"
 
 %import common.WS           -> WHITESPACE
 %import common.C_COMMENT
