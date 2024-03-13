@@ -23,6 +23,11 @@ from vars    import *
 #                                                                       #
 #########################################################################
 
+def flatten_program(P):
+    main = P.children[0]
+    result = deepcopy(P)
+    result.children = [flatten_procedure(main)]
+
 def flatten_procedure(p):
     [name, params, stat] = p.children
     scoped_name_env = [{'?scope_id_max': 0, '?scope_id': 0}]
