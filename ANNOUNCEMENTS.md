@@ -8,16 +8,50 @@ The strategy for designing the optimization stage is:
 
 1) Take the qiskit circuit that you have generated through your previous compilation steps and extract a ZX network from it (let's call it `qc`):
 
-zxc = pyzx.Circuit.from_qasm(qc.qasm())
+	zxc = pyzx.Circuit.from_qasm(qc.qasm())
 
 You can visualize it using PyZX to have a inspect the structure before optimizing:
-pyzx.draw(zxc)
+
+	pyzx.draw(zxc)
 
 2) Perform your optimizing transformations using ZX rewrite rules (refer to https://pyzx.readthedocs.io/ and the paper). This is the central task. I suggest to inspect the intermediate results along the way. (For learning, apply the rewrite rules directly. In practice when simply using the library, to just get everything fully optimized, you can use `pyzx.simplify.full_optimize()`)
 
 3) Extract the quantum circuit back from the optimized ZX network. This can then be passed to the next compiler stage, for topology mapping, etc.
 
-qc_opt = zx.extract_circuit(g.copy())
+	qc_opt = zx.extract_circuit(g.copy())
+
+Update:
+
+In the newest version of qiskit, the `.qasm()` method has been removed, as there are two different versions of QASM, v2 and v3. PyZX uses QASM2, so the way to extract a ZX network from your Qiskit circuit is:
+
+	import pyzx
+	from qiskit import qasm2
+
+	# Assume qc is your Qiskit quantum circuit
+	zxc = pyzx.Circuit.from_qasm(qasm2.dumps(qc))
+
+If you didn't get your compiler to generate circuits, you can use for example
+
+	from qiskit.circuit.library import QFT
+	qc = QFT(4)
+
+PyZX uses matching functions (which detect opportunity for rewriting parts of the network) and rewrite rules (to perform the rewriting at match sites): https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications
+
+Use
+
+from pyzx import simplify, rules
+
+to experiment with the individual ZX rules. You can see them all put together in action by e.g. doing:
+
+	zxg = zxc.to_graph()
+	reducer = pyzx.simplify.full_reduce_iter(zxg)
+
+	for i in reducer:
+		print(i)
+		pyzx.draw(zxg)
+
+	zxc2 = pyzx.extract_circuit(zxg.copy())
+	pyzx.draw(zxc2)
 
 # 27/3/2024: Reading material for 3/4 and rescheduling of 20/3
 
