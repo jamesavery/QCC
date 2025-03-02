@@ -1,9 +1,9 @@
 // Assignment 1.3 
-?exp:     exp1  |  exp CMP  exp1 -> exp    
-?exp1:    exp2  |  exp1 AS  exp2 -> exp 
-?exp2:    exp3  |  exp2 MD  exp3 -> exp 
-?exp3:    exp4  |  exp3 PE  exp4 -> exp
-?exp4:    INT | FLOAT
+exp:     exp1  |  exp CMP  exp1    
+exp1:    exp2  |  exp1 AS  exp2 
+exp2:    exp3  |  exp2 MD  exp3 
+exp3:    exp4  |  exp3 PE  exp4
+exp4:    INT | FLOAT
 |           NAMED_CONSTANT
 |           lval
 |           UNOP exp 
