@@ -4,6 +4,7 @@ from lark.lexer import Token
 from ast import literal_eval
 import numpy as np
 import sys
+from copy import deepcopy
 
 # Lark nodes can be Token (corresponding to TERMINALS) or Tree (corresponding to nonterminals).
 # This helper function unifies the slightly different things you need to do to get their types: 
@@ -15,7 +16,7 @@ def node_name(t):
 
 # Helper function to get CQ-type from a python value
 def numerical_type(v):
-    if type(v) == bool: return "cbit"
+    if type(v) == bool or type(v) == np.bool: return "cbit"
     if type(v) == int or type(v) == np.int64: return "int"
     if type(v) == float or type(v) == np.float64: return "float"
     raise Exception(f"Unrecognized numerical type {type(v)} for {v}")
@@ -31,9 +32,67 @@ def node_rule(v, node_type=""):
     return rule
 
 def is_numeric(x): 
-    return (type(x) == bool or 
+    return (type(x) == bool or type(x) == np.bool or 
             type(x) == int or type(x) == float or 
             type(x) == np.float64 or type(x) == np.int64)
+
+
+def prune_exp(exp):
+    '''Produce a simplified AST in the specification grammar from a parse-tree in the disambiguated grammar.
+       1. Prunes auxiliary nonterminals introduced for disambiguous operator precedence and associativity when parsing.
+       2. Re-merges binary operations that were split as AS (+,-), MD (*,/,%), CMP (==,!=,<,>,<=,>=), and PE (**) back into BINOP.
+    '''
+
+    # Rewrite tokens, merging exp1, exp2, exp3, exp4 into exp
+    if isinstance(exp, Token):
+        if exp.type == 'RULE' and 'exp' in exp.value:
+            #print(f"Replacing token {exp} with 'exp'")
+            return Token('RULE','exp')
+        return deepcopy(exp)
+    
+     # If exp is not Token, it must be Tree - another type means something is wrong. Catch this error.
+    assert(isinstance(exp,Tree))
+    
+    # Prune auxiliary nonterminals introduced for disambiguous operator precedence and associativity when parsing
+    result = deepcopy(exp)
+    if isinstance(exp.data, Token):
+        match(exp.data.value):
+            case 'exp1' | 'exp2' | 'exp3' | 'exp4':
+                result.data = Token('RULE','exp')
+                if (exp.data.value != 'exp4'): # Collapse all levels between exp and exp4
+                    match(exp.children):
+                        case [_]:
+                            # print(f"Pruning aux nonterminal {exp.data} (#children = {len(exp.children)})")                    
+                            return prune_exp(exp.children[0])
+
+    # Re-merge binary operations that were split as AS (+,-), MD (*,/,%), CMP (==,!=,<,>,<=,>=), and PE (**) back into BINOP
+    rule = node_rule(exp,"exp")
+    
+    match(rule):
+        case [_,'CMP',_] | [_,'AS',_] | [_,'MD',_] | [_,'PE',_]:
+            result.children[1] = Token('BINOP',exp.children[1].value)
+
+    # Recurse on children
+    for i, c in enumerate(result.children):
+        if(type(c) == Tree):
+            # print(f"Recursing on {c.data}")
+            result.children[i] = prune_exp(c)
+    
+    return result
+
+def prune_tree(tree):
+    if isinstance(tree, Token): return tree
+    if node_name(tree) == 'exp': return prune_exp(tree)
+    else:
+        result = deepcopy(tree)
+        for i, c in enumerate(result.children):
+            result.children[i] = prune_tree(c)
+        return result
+
+def parse_and_prune(parser,string):
+    '''Parse the expression and prune the AST back to the specification grammar.'''
+    return prune_tree(parser.parse(string))        
+        
 
 # Helper functions for interpretation
 named_constants = {'pi': np.pi}
@@ -105,50 +164,6 @@ def lookup_scope(l, env):
         if name in V: return len(env)-i-1
     return -1
 
-# Helper functions for keeping track of scope for unique variable naming:
-# used by vars.py and flatten.py
-def new_scope(scoped_name_env):
-    scoped_name_env[0]['?scope_id_max'] += 1
-    scope_id = scoped_name_env[0]['?scope_id_max']
-    return {'?scope_id': scope_id, '?scope_index': len(scoped_name_env)-1}
-
-def scope_id(lval,scoped_name_env):
-    scope_index = lookup_scope(lval,scoped_name_env)
-    return scoped_name_env[scope_index]['?scope_id']
-
-def scope_and_name(lval, scoped_name_env):
-    name = lval_name(lval)
-    scope_ix = lookup_scope(name,scoped_name_env)
-    scope_id = scoped_name_env[scope_ix]['?scope_id']
-    return (name, scope_id)
-
-def scoped_name(lval,scoped_name_env):
-    (name,scope_id) = scope_and_name(lval,scoped_name_env)
-    return f"{name}_{scope_id}" if scope_id > 0 else f"{name}"
-
-def typeof_declaration(d):
-    rule = node_rule(d, "declaration")
-    match(rule):
-        case ['TYPE','lval']:     # Scalar or array-declaration without initialization (0-initialize)
-            type, lval = d.children
-            lval_rule = [node_name(c) for c in lval.children]
-            match(lval_rule):
-                case ['ID']: 
-                    [name] = lval.children
-                    return (f"{name}", f"{type}")
-                case ['ID','INT']: 
-                    [name,size] = lval.children
-                    return (f"{name}", f"{type}[{size}]")
-                
-        case ['TYPE','ID',_]: # Scalar declaration with initialization
-            type, name, exp = d.children
-            return (f"{name}", f"{type}")
-
-        case ['TYPE','ID',_,'exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
-            type, name, exp_size, values = d.children
-            size     = literal_eval(exp_size)
-            return (f"{name}", f"{type}[{size}]")
-
 
 def max_type(t1,t2):
     try:
@@ -157,6 +172,38 @@ def max_type(t1,t2):
         return scalar_types[max(i1,i2)]
     except:
         return None
+
+########### HELPER FUNCTION FOR BUILDING LARK AST NODES. ADD MORE AS NEEDED ############
+# To make a new AST node, use 
+#  - Token('<TOKEN-NAME>', value)                 for terminals, and 
+#  - Tree(Token('RULE', '<rule-name>'), children) for nonterminals.
+########################################################################################
+from lark.tree import Tree
+from lark.lexer import Token
+
+def make_program(procedures):
+    return Tree(Token('RULE', 'program'), procedures)
+
+def make_procedure(name, parameters, statement):
+    return Tree(Token('RULE', 'procedure'),  
+                [name, Tree(Token('RULE','parameter_declarations'),parameters), statement])   
+
+def make_skip_statement():
+    return Tree(Token('RULE','statements'), [Token('SKIP','skip')])
+
+def make_block(declarations, statements, condense):
+    #print(f"Making block with {len(declarations)} declarations and {len(statements)} statements (condense = {condense})")
+    if(condense):
+        match(len(statements)):
+            case 0: 
+                return make_skip_statement()
+            case 1: 
+                return statements[0]
+        
+    return Tree(Token('RULE','statement'),[Tree(Token('RULE', 'block'), 
+                [Tree(Token('RULE', 'declarations'), [d for d in declarations if d != True]), 
+                 Tree(Token('RULE', 'statements'),   [s for s in statements   if s != True])])])
+
 
 ########### HELPER FUNCTION FOR BUILDING LARK AST NODES. ADD MORE AS NEEDED ############
 # To make a new AST node, use 
