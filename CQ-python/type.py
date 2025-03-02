@@ -140,7 +140,7 @@ def type_statement(s,type_env):
                 raise TypeError(f"Assignment to {lval_name(lval)} of type {t1} with expression of type {t2}")
             return True
         
-        case ['IF', _, 'statement', 'statement']:
+        case ['IF', 'exp', 'statement', 'statement']:
             _, exp, s1, s2 = s.children
             t = type_exp(exp,type_env)
             if t != 'cbit' and t != 'int':
@@ -149,7 +149,7 @@ def type_statement(s,type_env):
             t1, t2 = type_statement(s1,type_env), type_statement(s2,type_env)
             return t1 and t2
         
-        case ['WHILE', _, 'statement']:
+        case ['WHILE', 'exp', 'statement']:
             _, exp, s1 = s.children
             t = type_exp(exp,type_env)
             if t != 'cbit' and t != 'int':
@@ -301,7 +301,7 @@ def type_declaration(d,type_env):
                 case _: 
                     raise Exception(f"Unrecognized rule {lval_rule} in lval {lval}")
                 
-        case ['TYPE','ID',_]: # Scalar declaration with initialization
+        case ['TYPE','ID','exp']: # Scalar declaration with initialization
             type, name, exp = d.children
             t = type_exp(exp,type_env)
             tm = max_type(type,t)
@@ -309,7 +309,7 @@ def type_declaration(d,type_env):
                 raise TypeError(f"Declaration of {name} of type {type} initialized with expression of type {t}")
             return (f"{name}", f"{type}")
 
-        case ['TYPE','ID',_,'exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
+        case ['TYPE','ID','exp','exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
             type, name, exp_size, values = d.children
             size     = literal_eval(exp_size)
             t_values = [type_exp(e,type_env) for e in values.children]
