@@ -19,80 +19,82 @@ def show_procedure(p):
             sparams = [show_parameter_declaration(d) for d in params.children]
             sparams = ",".join(sparams)
             sstat   = show_statement(stat)
-            return f"{fname}({sparams}){sstat})"
+            return f"{fname}({sparams}) {sstat}"
         
         case _: 
             raise Exception(f"Unrecognized rule {rule} in procedure {p}")
 
-def show_parameter_declaration(d): 
+def show_parameter_declaration(d,depth=0): 
     rule = node_rule(d, "parameter_declaration")
-    
+    prefix = "  "*depth
     match(rule): 
         case ['TYPE','ID']:        # Scalar declaration
             type, name = d.children
-            return f"{type} {name}"
+            return f"{prefix}{type} {name}"
         
         case ['TYPE','ID','INT']:  # Constant size array 
             type, name, size = d.children
-            return f"{type} {name}[{size}]"
+            return f"{prefix}{type} {name}[{size}]"
         
         case ['TYPE','ID','ID']:   # Variable size array
             type, name, size = d.children
-            return f"{type} {name}[{size}]"
+            return f"{prefix}{type} {name}[{size}]"
                     
         case _: 
             raise Exception(f"Unrecognized rule {rule} in parameter_declaration {d}")        
 
 
-def show_statement(s):
+def show_statement(s,depth=0):
     rule = node_rule(s, "statement")
-    
+    prefix = "  "*depth
+
     try:
         match(rule):
             case ['procedure_call']:   # Subroutine call
                 [procedure_call] = s.children
                 name, lvals = procedure_call.children
-                return f"call '{name}' ({', '.join([show_lval(v) for v in lvals.children])}) ;"
+                return f"{prefix}call '{name}' ({', '.join([show_lval(v) for v in lvals.children])}) ;"
             
-            case ['lval', 'EQ', _] | ['ID','EQ',_]: # Assignment
+            case ['lval', 'EQ', 'exp']: # Assignment
                 [lval,_,exp]    = s.children
                 lhs = show_lval(lval)
                 rhs = show_exp(exp)
-                return f"{lhs} = {rhs} ;"
+                return f"{prefix}{lhs} = {rhs} ;"
             
             case ['qupdate']:           # Quantum update
                 [qupdate]       = s.children
-                return show_qupdate(qupdate)
+                return f"{prefix}{show_qupdate(qupdate)} ;"
 
-            case ['qupdate','IF',_]:# Conditional quantum update
+            case ['qupdate','IF','lval']:# Conditional quantum update
                 [qupdate,_,lval] = s.children
                 sq, sc = show_qupdate(qupdate), show_lval(lval)
-                return f"{sc} if {sq}) ;"
+                return f"{prefix}{sc} if {sq}) ;"
 
-            case ['MEASURE',_,_]: # qbit measurement
+            case ['MEASURE','lval','lval']: # qbit measurement
                 [_,qbit,cbit]   = s.children
                 sq, sc = show_lval(qbit), show_lval(cbit)
-                return f"measure {sq} -> {sc} ;"
+                return f"{prefix}measure {sq} -> {sc} ;"
 
-            case ['IF', _, 'statement', 'statement']:
+            case ['IF', 'exp', 'statement', 'statement']:
                 [_,exp,stat_true, stat_false] = s.children
-                se, st, sf = show_exp(exp), show_statement(stat_true), show_statement(stat_false)
-                return f"if({se})\n{st}\nelse\n{sf}"
+                se, st, sf = show_exp(exp), show_statement(stat_true,depth+1), show_statement(stat_false,depth+1)
+                return f"{prefix}if({se})\n{st}\nelse\n{sf}"
 
-            case ['WHILE', _, 'statement']:
+            case ['WHILE', 'exp', 'statement']:
                 [_,exp_test, stat] = s.children
-                se, st = show_exp(exp_test), show_statement(stat)
-                return f"while({se})\n{st}"
+                se, st = show_exp(exp_test), show_statement(stat,depth)
+                return f"{prefix}while({se})\n{st}"
 
             case ['block']:
                 [block] = s.children
                 decls, stats = block.children
                 
-                sdecls = [show_declaration(d) for d in decls.children]
-                sstats = [show_statement(c) for c   in stats.children]
+                sdecls = [f"{prefix}  {show_declaration(d)}" for d in decls.children]
+                sstats = [show_statement(c,depth+1) for c   in stats.children]
                 sdecls = "\n".join(sdecls)  
                 sstats = "\n".join(sstats)  
-                return f"{{\n{sdecls}\n{sstats}\n}}\n"
+                middle = "\n\n" if sdecls and sstats else ""
+                return f"{prefix}{{\n{sdecls}{middle}{sstats}\n{prefix}}}\n"
             
             case _: 
                 raise Exception(f"Unrecognized rule: {rule} in statement {s}")
