@@ -71,7 +71,7 @@ def type_lval(l,type_env):
             size = array_size(type)
            # NB:lvals in procedure calls refer to the array by base name, not including size.
 
-        case ['ID', _]: # id[exp]
+        case ['ID', 'exp']: # id[exp]
             [name,exp_index] = l.children
             t1 = lookup_lval(name, type_env)
             t2 = type_exp(exp_index,type_env)
@@ -128,7 +128,7 @@ def type_statement(s,type_env):
                     return False
             return True
 
-        case ['lval', 'EQ', _]: # Assignment
+        case ['lval', 'EQ', 'exp']: # Assignment
             lval, _, exp = s.children
             #print(f"{rule}: {lval} = {exp}")
             t1, t2 = type_lval(lval, type_env), type_exp(exp,type_env)
@@ -224,11 +224,19 @@ def type_exp(e,type_env):
     #print(f"type_exp: {rule} for {show_exp(e)}")
     try:
         match(rule):
-            case ['UNOP', _]:       # Unary operation
+            case ['exp']:
+                [e1] = e.children
+                return type_exp(e1,type_env)            
+
+            case ['lval']:
+                [e1] = e.children
+                return type_lval(e1,type_env)
+            
+            case ['UNOP', 'exp']:       # Unary operation
                 unop, e1 = e.children
                 return type_exp(e1,type_env)
         
-            case [_,'BINOP',_] | [_,'PE',_] | [_,'MD',_] | [_,'AS',_]: 
+            case ['exp','BINOP','exp']: 
                 e1,binop,e2 = e.children
                 t1,t2 = type_exp(e1,type_env), type_exp(e2,type_env)
                 tm = max_type(t1,t2)
@@ -236,7 +244,7 @@ def type_exp(e,type_env):
                     raise TypeError(f"Incompatible types {t1} and {t2} in {rule}")
                 return tm
             
-            case  [_,'CMP',_]:
+            case  ['exp','CMP','exp']:
                 e1,cmp,e2 = e.children
                 t1,t2 = type_exp(e1,type_env), type_exp(e2,type_env)
                 tm = max_type(t1,t2)
@@ -244,7 +252,7 @@ def type_exp(e,type_env):
                     raise TypeError(f"Incompatible types {t1} and {t2} in {rule}")
                 return 'cbit'
 
-            case ['BUILTIN_FUN1', _]:
+            case ['BUILTIN_FUN1', 'exp']:
                 fun, e1 = e.children
                 t1 = type_exp(e1,type_env)
                 
@@ -254,7 +262,7 @@ def type_exp(e,type_env):
                     case _:   
                         raise TypeError(f"Argument to builtin function {fun} is of type {t1}, must be convertible to float.")
             
-            case ['BUILTIN_FUN2', _, _]:
+            case ['BUILTIN_FUN2', 'exp', 'exp']:
                 fun, e1, e2 = e.children
                 t1, t2 = type_exp(e1,type_env), type_exp(e2,type_env)
 
@@ -263,38 +271,12 @@ def type_exp(e,type_env):
                     raise TypeError(f"Argument to builtin function {fun} is of type {t1} and {t2}, must be convertible to float.")                
                 else: 
                     return 'float'
-# Why no 'lval'?
-            case ['ID']: 
-                [var] = e.children
-                t = lookup_lval(var, type_env)
-                if t is not None:
-                    match(t):
-                        case 'int' | 'float' | 'cbit': return t
-                        case 'qbit':
-                            raise TypeError(f"Quantum variable {var} cannot be used in classical expression")
-                        case _:
-                            raise TypeError(f"Variable {var} is of type {t}, but only scalar values are allowed in expressions.")
-                else:
-                    raise NameError(f"Variable {var} referenced before definition in expression {show_exp(e)}")
+            
+            case ['INT']:
+                return 'int'
+            case ['FLOAT'] | ['NAMED_CONSTANT']:
+                return 'float'
 
-            case ['ID', _]:
-                [var,e1] = e.children
-                t2 = type_exp(e1,type_env)
-                
-                if t2 != 'int':
-                    raise TypeError(f"Array index {show_exp(e1)} of {var} must be of type int (got {t2})")
-                
-                t1 = lookup_lval(var, type_env)
-                if t1 is not None:
-                    base = array_base(t1)
-                    match(base):
-                        case 'int' | 'float' | 'cbit': return base
-                        case 'qbit':
-                            raise TypeError(f"Quantum variable {var} cannot be used in classical expression")
-                        case _:
-                            return TypeError(f"Variable {var} is of type {t1}, but only scalar values are allowed in expressions.")
-                else:
-                    raise NameError(f"Variable {var} referenced before definition")
                 
     except:        
         raise Exception(f"Error evaluating rule {rule} for node {e}") 
