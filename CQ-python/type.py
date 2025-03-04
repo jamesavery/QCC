@@ -298,15 +298,21 @@ def type_declaration(d,type_env):
                 case ['ID','INT']: 
                     [name,size] = lval.children
                     return (f"{name}", f"{type}[{size}]")
+                case ['ID','exp']:
+                    [name,size] = lval.children
+                    t = type_exp(size,type_env)
+                    if t != 'int':
+                        raise TypeError(f"Array {name} declared with size {size} but initialized with expression of type {t}")
+                    return (f"{name}", f"{type}[{size}]")
                 case _: 
-                    raise Exception(f"Unrecognized rule {lval_rule} in lval {lval}")
+                    raise Exception(f"type_declaration: Unrecognized rule {lval_rule} in lval {lval}")
                 
         case ['TYPE','ID','exp']: # Scalar declaration with initialization
             type, name, exp = d.children
             t = type_exp(exp,type_env)
             tm = max_type(type,t)
             if type != tm:
-                raise TypeError(f"Declaration of {name} of type {type} initialized with expression of type {t}")
+                raise TypeError(f"type_declaration: Declaration of {name} of type {type} initialized with expression of type {t}")
             return (f"{name}", f"{type}")
 
         case ['TYPE','ID','exp','exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
