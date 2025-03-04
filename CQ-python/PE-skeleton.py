@@ -4,7 +4,7 @@ from lark.lexer import Token
 
 from helpers import *
 from show import *
-from showcq import *
+from show import *
 from type import *
 # We recurse through the abstract syntax tree using a set of mutually recursive functions,
 # one for each node type in the AST (corresponding to rules in the grammar):
@@ -104,7 +104,79 @@ def PE_parameter_declaration(d,value_env):
             else:
                 return (result, False)
         case _: 
-            raise Exception(f"Unrecognized rule {rule} in parameter_declaration {d}")
+            raise Exception(f"PE_parameter_declaration: Unrecognized rule {rule} in {show_parameter_declaration(d)}")
+
+# Full evaluation/interpretation of classical expression
+# Solution to assignment 1.5
+def evaluate_lval(id, index_exp, env): 
+    name  = f"{id}"
+    scope = lookup_scope(name, env)
+    
+    try:
+        if(index_exp is None):
+            return env[scope][name]
+        else:
+            n_index = evaluate_exp(index_exp, env)
+            return env[scope][name][n_index]
+    except Exception as e:
+        print(f"evaluate_lval: Error {e} evaluating {name}[{index_exp}] in {env}")
+        raise e
+
+
+def evaluate_exp(e, env):
+    # match(node_name(e)):
+    #     case 'NUMERICAL_VALUE': return e        
+    #     case 'INT' | 'FLOAT':  return literal_eval(e.value)
+    #     case 'NAMED_CONSTANT': return named_constants[e.value]    
+        
+    if isinstance(e, Token):
+        print(f"evaluate_exp encountered token {e}")
+        assert(False)   
+
+    # e has children to process.
+    rule  = [node_name(c) for c in e.children]
+
+    match(rule):
+        case ['exp']:
+            [e1] = e.children
+            return evaluate_exp(e1,env)
+        case ['INT'] | ['FLOAT']:
+            [c] = e.children
+            return literal_eval(c.value)
+        case ['NAMED_CONSTANT']:
+            [c] = e.children
+            return named_constants[c.value]
+        case ['lval']:
+            [lv] = e.children
+            (lv0, name, index, static) = PE_lval(lv, env)
+            if static:
+                return evaluate_lval(name, index, env)
+            else:
+                raise Exception(f"evaluate_exp: {show_lval(lv)} not fully resolved")
+        
+        case ['UNOP', 'exp']:       # Unary operation
+            unop, e1 = e.children
+            v1 = evaluate_exp(e1,env)
+            return evaluate_unop[unop](v1);            
+        
+        case ['exp','BINOP','exp']:
+            e1,binop,e2 = e.children
+            v1,v2 = evaluate_exp(e1,env), evaluate_exp(e2,env)
+            v3 = evaluate_binop[binop](v1,v2)            
+            return v3
+
+        case ['BUILTIN_FUN1', 'exp']:
+            fun, e1 = e.children
+            v1 = evaluate_exp(e1,env)
+            v2 = evaluate_fun[fun](v1) 
+            return v2
+        
+        case ['BUILTIN_FUN2', 'exp', 'exp']:
+            fun, e1, e2 = e.children
+            v1, v2 = evaluate_exp(e1), evaluate_exp(e2,env)
+            return evaluate_fun[fun]()
+        
+    raise Exception(f"evaluate_exp: {rule} not implemented")
 
     
 
@@ -127,27 +199,28 @@ def PE_parameter_declaration(d,value_env):
 # Returns a tuple consisting of
 #   - the residual AST after partial evaluation
 #   - the lval base name      (e.g. 'a' for 'a[23+b]')
-#   - the residual size/index (e.g. the AST for 23+b for 'a[23+b]' if b is dynamic, or 25 if b=2 at time of evaluation.
+#   - the residual size/index as an expression AST 
+#     (e.g. the AST for 23+b for 'a[23+b]' if b is dynamic, or AST for 25 (exp->INT(25)) if b=2 at time of evaluation.
 #   - a boolean denoting whether the lval was fully resolved to a concrete memory address that can be written to or read from.
 def PE_lval(v,env):
     rule = node_rule(v, "lval")
 
     result = deepcopy(v)
     try:
+        id = v.children[0]
+        name = f"{id}"
         match(rule):
             case ['ID']:       
-                [name] = v.children
                 return (result, name,None, True)
             case ['ID','INT']: 
-                [name,size_or_index] = v.children
-                return (result, name,int(size_or_index), True)
-            case ['ID',_]: 
-                [name,exp]    = v.children
-                #print(f"PE_lval: {name}[{showcq_exp(exp)}]")
+                [_,size_or_index] = v.children
+                return (result, name,make_constant(size_or_index.value), True)
+            case ['ID','exp']: 
+                [_,exp]    = v.children
+                #print(f"PE_lval: {name}[{show_exp(exp)}]")
                 (size_or_index,static) = PE_exp(exp,env)
-                result.children[1] = size_or_index
-
-                #print(f"exp -> {size_or_index}")
+                result = make_lval(name,size_or_index)
+                
                 if static:
                     #print(f"resolved: {(name,size_or_index,True)}")
                     return (result,name,size_or_index, True)
@@ -155,18 +228,18 @@ def PE_lval(v,env):
                     #print(f"unresolved: {(result,None,False)}")
                     return (result, name, None, False)
             case _: 
-                raise Exception(f"Unrecognized rule {rule} in lval-node {showcq_lval(v)}")
+                raise Exception(f"PE_lval: Unrecognized rule {rule} in lval-node {show_lval(v)}")
     except:
-        raise Exception(f"Error evaluating rule {rule} for lval-node {showcq_lval(v)}")
+        raise Exception(f"PE_lval: Error evaluating rule {rule} for lval-node {show_lval(v)}")
                 
     
 # Partial evaluation of declaration.
 # Input:
 # - d:         a CQ declaration subtree
 # - value_env: a list of dict's denoting variable scopes.
-# Returns a pair (d',sigma), where:
+# Returns a pair (d',static), where:
 #  - d' is the residual declaration AST after partial evaluation
-#  - sigma is a bool denoting whether it is fully static or contains dynamic parts.    
+#  - static is a bool denoting whether it is fully static or contains dynamic parts.    
 def PE_declaration(d,value_env):
     # 1. Scalar declarations without initializations initialize the lval to 0
     # 2. Array declarations without initializations initialize the lval to an array of zeros
@@ -178,16 +251,20 @@ def PE_declaration(d,value_env):
     # the declaration is specialized to the residual expression.
 
     rule = node_rule(d, "declaration")
-    result = deepcopy(d)
-    #print(f"PE_declaration: {rule} for {showcq_declaration(d)}\n in env = {env[1:]}")
-    match(rule):
-      #####################################################
-      ########### YOUR IMPLEMENTATION GOES HERE ###########     
-      #####################################################            
-        case _:
-            raise Exception(f"Unrecognized rule {rule} in declaration-node {showcq_declaration(d)}")
-    
-    raise Exception(f"Unrecognized rule {rule} in declaration-node {showcq_declaration(d)}")
+
+    try:
+        match(rule):
+            case ['TYPE','lval']: # Zero initialization
+            
+            case ['TYPE','ID','exp']: # TYPE ID '[' exp ']': Scalar initialization; lval always resolved.
+
+            case ['TYPE','ID','INT','exps']: # Array declaration with initialization 
+
+            case _:
+                raise Exception(f"PE_declaration: Unrecognized rule {rule} in {show_declaration(d)}")
+    except Exception as e:
+        print(f"PE_statement: Error {e} evaluating rule {rule} for statement-node {show_statement(s)}")
+        raise e
 
 # Partial evaluation of statements.
 # Input:
@@ -198,18 +275,34 @@ def PE_declaration(d,value_env):
 #  - sigma is True iff s was fully static (and thus fully evaluated away, i.e. s' = {} = skip) 
 def PE_statement(s,value_env):
     rule = node_rule(s, "statement")
-    #print(f"PE_statement: {rule}: {showcq_statement(s)}\nin env = {value_env[1:]}")
+    #print(f"PE_statement: {rule}: {show_statement(s)}\nin env = {value_env[1:]}")
     result = deepcopy(s)    
     skip   = make_skip_statement()
     try:
         match(rule):
-      #####################################################
-      ########### YOUR IMPLEMENTATION GOES HERE ###########     
-      #####################################################            
+            case ['lval', 'EQ', 'exp']: # Assignment
+                
+            case ['IF', 'exp', 'statement', 'statement']:
+            
+            case ['WHILE', 'exp', 'statement']:
+                
+            case ['block']:
+                
+            case ['qupdate']:
+            
+            case ['qupdate','IF','lval']:
+            
+            case ['MEASURE','lval','lval']:
+            
+            case ['procedure_call']:
+            
             case _:
-                raise Exception(f"Unrecognized rule {rule} in statement-node {showcq_statement(s)}")
-    except:
-        raise Exception(f"Error evaluating rule {rule} for statement-node {showcq_statement(s)}")            
+                raise Exception(f"PE_statement: Unrecognized rule {rule} in {show_statement(s)}")
+    
+    except Exception as e:
+        print(f"PE_statement: Error {e} evaluating rule {rule} for statement-node {show_statement(s)}")
+        raise e
+
 
 # Partial evaluation of qupdate
 # Input:
@@ -220,28 +313,19 @@ def PE_statement(s,value_env):
 # Since qupdates are never fully static, we don't return a sigma
 def PE_qupdate(q,env):
     rule = node_rule(q, "qupdate")
-    #print(f"PE_qupdate: {rule}: {showcq_qupdate(q)}")
-    result = deepcopy(q)
+
     try:
         match(rule):
             case ['gate','lval']:
-                [gate,lval] = q.children
-                g = PE_gate(gate, env)
-                (l,_,_,_) = PE_lval(lval, env)
-                result.children = [g,l]
-                #print(f"Replacing {showcq_qupdate(q)} with {showcq_qupdate(result)} (env={env})")
-                return result
+
             case ['lval', 'SWAP', 'lval']:
-                [lval1,SWAP,lval2] = q.children
-                (l1,_,_,_) = PE_lval(lval1, env)
-                (l2,_,_,_) = PE_lval(lval2, env)
-                result.children = [l1,SWAP,l2]
-                #print(f"Replacing {showcq_qupdate(q)} with {showcq_qupdate(result)}")                
-                return result
+
             case _:
-                raise Exception(f"Unrecognized rule {rule} in qupdate-node {showcq_qupdate(q)}")
-    except:
-        raise Exception(f"Error evaluating rule {rule} for qupdate-node {showcq_qupdate(q)}")        
+                raise Exception(f"PE_qupdate: Unrecognized rule {rule} in {show_qupdate(q)}")
+    except Exception as e:
+        print(f"PE_qupdate: Error {e} evaluating rule {rule} for qupdate-node {show_qupdate(q)}")
+        raise e
+        
 
 # Partial evaluation of gate
 # Input:
@@ -251,21 +335,23 @@ def PE_qupdate(q,env):
 #  - g' is the residual AST after partial evaluation                
 def PE_gate(g,env):
     rule = node_rule(g, "gate")
-    #print(f"PE_gate: {rule}: {showcq_gate(g)}")
+    #print(f"PE_gate: {rule}: {show_gate(g)}")
     result = deepcopy(g)
     try:
         match(rule):
             case ['NOT'] | ['H']: 
                 return g
-            case ['rgate',_]:
+            case ['rgate','exp']:
                 [rgate, angle_exp] = g.children
                 (a,a_static)       = PE_exp(angle_exp, env)
                 result.children    = [rgate,a]
                 return result
             case _:
-                raise Exception(f"Unrecognized rule {rule} in gate-node {showcq_gate(g)}")
-    except:
-        raise Exception(f"Error evaluating rule {rule} for gate-node {showcq_gate(g)}")
+                raise Exception(f"PE_gate: Unrecognized rule {rule} in {show_gate(g)}")
+    except Exception as e:
+        print(f"PE_gate: Error {e} evaluating rule {rule} for gate-node {show_gate(g)}")
+        raise e
+        
 
 # Partial evaluation of expressions
 # Input:
@@ -283,76 +369,90 @@ def PE_exp(e,value_env):
 
     # e has children to process.
     rule = node_rule(e, "exp")
-    #print(f"PE_exp: {rule}: {showcq_exp(e)} with env={env}")
+    #print(f"PE_exp: {rule}: {show_exp(e)} with env={env}")
     result = deepcopy(e)
     try:
         match(rule):
-            case ['UNOP', _]:       # Unary operation
+            case ['exp']:
+                [e1] = e.children
+                return PE_exp(e1,value_env)
+
+            case ['INT'] | ['FLOAT']:
+                [c] = e.children
+                n   = literal_eval(c.value)
+                return (make_constant(n),True)
+            
+            case ['NAMED_CONSTANT']:
+                [c] = e.children
+                n   = named_constants[c.value]
+                return (make_constant(n),True)
+                
+            case ['UNOP', 'exp']:       # Unary operation
                 unop, e1 = e.children
                 (v1,v1_static) = PE_exp(e1,value_env)
                 if v1_static:
-                    return (evaluate_unop[unop](v1), True)
+                    n1 = evaluate_exp(e1,value_env)
+                    n  = evaluate_unop[unop](n1)
+                    return (make_constant(n),True)
                 else:
                     result.children[1] = v1
                     return (result,False)
         
-            case [_,'BINOP',_] | [_,'PE',_] | [_,'MD',_] | [_,'AS',_] | [_,'CMP',_]: 
+            case ['exp','BINOP','exp']: 
                 e1,binop,e2 = e.children
                 (v1,v1_static) = PE_exp(e1,value_env)
                 (v2,v2_static) = PE_exp(e2,value_env)
 
                 if v1_static and v2_static:
-                    return (evaluate_binop[binop](v1,v2), True)
+                    n1 = evaluate_exp(v1,value_env)
+                    n2 = evaluate_exp(v2,value_env)
+                    n      = evaluate_binop[binop](n1,n2)
+                    return (make_constant(n),True)
                 else:
                     result.children[0] = v1
                     result.children[2] = v2
                     return (result,False)
 
-            case ['BUILTIN_FUN1', _]:
+            case ['BUILTIN_FUN1', 'exp']:
                 fun, e1 = e.children
                 (v1,v1_static) = PE_exp(e1,value_env)
                 
                 if v1_static:
-                    return (evaluate_fun[fun](v1),True)
+                    n1 = evaluate_exp(e1,value_env)
+                    n  = evaluate_fun[fun](n1)
+                    return (make_constant(n),True)
                 else:
                     result.children[1] = v1                
                     return (result,False)
             
-            case ['BUILTIN_FUN2', _, _]:
+            case ['BUILTIN_FUN2', 'exp', 'exp']:
                 fun, e1, e2 = e.children
                 (v1,v1_static) = PE_exp(e1,value_env)
                 (v2,v2_static) = PE_exp(e2,value_env)
 
                 if v1_static and v2_static:
-                    return (evaluate_fun[fun](v1,v2),True)
+                    n1, n2 = evaluate_exp(e1,value_env), evaluate_exp(e2,value_env)
+                    n      = evaluate_fun[fun](n1,n2)
+                    return (make_constant(n),True)
                 else:
                     result.children[1] = v1
                     result.children[2] = v2
                     return (result,False)
             
-            case ['ID']: 
-                [var] = e.children
-                v = lookup_lval(var,value_env)
-                if v is not None:
-                    return (v,True)
+            case ['lval']:
+                [lv] = e.children
+                (lval0,name, index, static) = PE_lval(lv,value_env)
+                if static:
+                    n = evaluate_lval(name,index,value_env)                    
+                    return (make_constant(n),True)
                 else:
-                    return (result,False)
+                    return (lval0,False)
 
-            case ['ID', _]:
-                [var,e1] = e.children
-                (index,index_static) = PE_exp(e1,value_env)
-                vs                   = lookup_lval(var,value_env)
-                
-                if vs is not None and index_static:
-                    return (vs[index],True)
-                else:
-                    result.children[1] = index
-                    return (result,True)        
-          case _:
-            raise  Exception(f"evaluate_exp: {rule} not implemented")        
-    except:        
-        raise Exception(f"Error evaluating exp-node with rule {rule} for node {showcq_exp(result)}") 
-
-
+            case _:
+                raise Exception(f"PE_exp: Unrecognized rule {rule} in {show_exp(e)}")
+    
+    except Exception as e:
+        print(f"PE_exp: Error {e} evaluating rule {rule} for exp-node {show_exp(e)}")
+        raise e
 
 
