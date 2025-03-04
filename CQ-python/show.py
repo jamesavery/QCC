@@ -68,7 +68,7 @@ def show_statement(s,depth=0):
             case ['qupdate','IF','lval']:# Conditional quantum update
                 [qupdate,_,lval] = s.children
                 sq, sc = show_qupdate(qupdate), show_lval(lval)
-                return f"{prefix}{sc} if {sq}) ;"
+                return f"{prefix}{sq} if {sc}) ;"
 
             case ['MEASURE','lval','lval']: # qbit measurement
                 [_,qbit,cbit]   = s.children
@@ -193,12 +193,12 @@ def show_qupdate(q):
     rule = node_rule(q, "qupdate")
     
     match(rule):
-        case ['gate',_]:  # Single-qubit gate
+        case ['gate','lval']:  # Single-qubit gate
             [gate, lval] = q.children
             s1, s2 = show_gate(gate), show_lval(lval)
             return f"{s1} {s2}"
         
-        case [_,'SWAP',_]: # Array variable
+        case ['lval','SWAP','lval']: # Array variable
             [lval1,_,lval2] = q.children
             s1, s2 = show_lval(lval1), show_lval(lval2)
             return f"{s1} <> {s2}"
