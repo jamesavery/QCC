@@ -9,15 +9,14 @@ from copy import deepcopy
 # Lark nodes can be Token (corresponding to TERMINALS) or Tree (corresponding to nonterminals).
 # This helper function unifies the slightly different things you need to do to get their types: 
 def node_name(t):
-    if(is_numeric(t)):  return 'NUMERICAL_VALUE'
     if(type(t)==Token): return t.value if t.type == 'RULE' else t.type 
     if(type(t)==Tree):  return t.data if type(t.data)==str else t.data.value
     raise Exception(f"Unrecognized parse tree node: {t} with type {type(t)} ({type(t)==float}).")
 
 # Helper function to get CQ-type from a python value
 def numerical_type(v):
-    if type(v) == bool or type(v) == np.bool: return "cbit"
-    if type(v) == int or type(v) == np.int64: return "int"
+    if type(v) == bool  or type(v) == np.bool:    return "cbit"
+    if type(v) == int   or type(v) == np.int64:   return "int"
     if type(v) == float or type(v) == np.float64: return "float"
     raise Exception(f"Unrecognized numerical type {type(v)} for {v}")
 
@@ -26,8 +25,8 @@ def numerical_type(v):
 def node_rule(v, node_type=""):
     try:
         rule = [node_name(c) for c in v.children]
-    except:
-        raise Exception(f"Data error in {node_type} {v}")
+    except Exception as e:
+        raise Exception(f"Data error in {node_type} {v} {e}")
     
     return rule
 
@@ -92,7 +91,22 @@ def prune_tree(tree):
 def parse_and_prune(parser,string):
     '''Parse the expression and prune the AST back to the specification grammar.'''
     return prune_tree(parser.parse(string))        
-        
+
+# Print any Lark parse tree in yaml-format
+def ast_to_yaml(node, indent=""):
+    indent += "  "
+    result = ""
+    if isinstance(node, Token):
+        result += f"{indent} - token: {node.type}\n"
+        result += f"{indent}   value: {repr(node.value)}\n"
+    else:
+        result += f"{indent} - tree: {node.data}\n"
+        result += f"{indent}   children: # {len(node.children)} children, {[node_name(c) for c in node.children]}\n"
+        for i, child in enumerate(node.children):
+            result += f"{ast_to_yaml(child, indent)}"
+
+    return result
+
 
 # Helper functions for interpretation
 named_constants = {'pi': np.pi}
@@ -173,37 +187,6 @@ def max_type(t1,t2):
     except:
         return None
 
-########### HELPER FUNCTION FOR BUILDING LARK AST NODES. ADD MORE AS NEEDED ############
-# To make a new AST node, use 
-#  - Token('<TOKEN-NAME>', value)                 for terminals, and 
-#  - Tree(Token('RULE', '<rule-name>'), children) for nonterminals.
-########################################################################################
-from lark.tree import Tree
-from lark.lexer import Token
-
-def make_program(procedures):
-    return Tree(Token('RULE', 'program'), procedures)
-
-def make_procedure(name, parameters, statement):
-    return Tree(Token('RULE', 'procedure'),  
-                [name, Tree(Token('RULE','parameter_declarations'),parameters), statement])   
-
-def make_skip_statement():
-    return Tree(Token('RULE','statements'), [Token('SKIP','skip')])
-
-def make_block(declarations, statements, condense):
-    #print(f"Making block with {len(declarations)} declarations and {len(statements)} statements (condense = {condense})")
-    if(condense):
-        match(len(statements)):
-            case 0: 
-                return make_skip_statement()
-            case 1: 
-                return statements[0]
-        
-    return Tree(Token('RULE','statement'),[Tree(Token('RULE', 'block'), 
-                [Tree(Token('RULE', 'declarations'), [d for d in declarations if d != True]), 
-                 Tree(Token('RULE', 'statements'),   [s for s in statements   if s != True])])])
-
 
 ########### HELPER FUNCTION FOR BUILDING LARK AST NODES. ADD MORE AS NEEDED ############
 # To make a new AST node, use 
@@ -245,3 +228,15 @@ def make_block(declarations, statements, condense="No longer used, kept for API 
                 [Tree(Token('RULE', 'declarations'), declarations), 
                  Tree(Token('RULE', 'statements'),   statements)])])
 
+def make_lval(name, size_or_index=None):
+    if size_or_index == None: 
+        return Tree(Token('RULE', 'lval'), [Token('ID', name)])
+    else: 
+        return Tree(Token('RULE', 'lval'), [Token('ID', name), size_or_index])
+    
+# We want the output from partial evaluation to be a valid CQ syntax tree. 
+# Hence we don't return fully evaluated sub-expressions as constants, but as exp -> (INT|FLOAT) 
+# trees, which are valid input to evaluate_exp.
+def make_constant(v):
+    data_type = 'INT' if type(v) == int else 'FLOAT'
+    return Tree(Token('RULE','exp'), [Token(data_type, str(v))])

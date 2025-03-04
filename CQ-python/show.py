@@ -98,14 +98,16 @@ def show_statement(s,depth=0):
             
             case _: 
                 raise Exception(f"Unrecognized rule: {rule} in statement {s}")
-    except:        
-        raise Exception(f"Error evaluating rule {rule} for node {s}") 
+    except Exception as e:
+        print(f"show_statement: {e} when evaluating {rule} in {s.pretty()}")
+        raise e       
+        
 
 
 def show_exp(e):
     # Is this a terminal (a leaf node), or does e have children?
     match(node_name(e)):
-        case 'INT' | 'FLOAT': return f"/*{node_name(e)}*/{e.value}\n"
+        case 'INT' | 'FLOAT': return f"{e.value}"
             
     # e has children to process, extract pattern:
     try:
@@ -153,16 +155,16 @@ def show_declaration(d):
     rule = node_rule(d, "declaration")
     
     match(rule):
-        case ['TYPE',_]:     # Scalar or array-declaration without initialization (0-initialize)
+        case ['TYPE','lval']:     # Scalar or array-declaration without initialization (0-initialize)
             type, lval = d.children
-            return f"{type} {show_lval(lval)}) ;"
+            return f"{type} {show_lval(lval)} ;"
         
-        case ['TYPE','ID',_]: # Scalar declaration with initialization
+        case ['TYPE','ID','exp']: # Scalar declaration with initialization
             type, name, exp = d.children
-            sexp = show_exp(exp)
-            return f"{type} {name} = {sexp} ;"
+            sindex = show_exp(exp)
+            return f"{type} {name} = {sindex} ;"
         
-        case ['TYPE','ID',_,'exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
+        case ['TYPE','ID','exp','exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
             type, name, exp_index, values = d.children
             sindex = show_exp(exp_index)            
             svalues = [show_exp(e) for e in values.children]
