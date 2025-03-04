@@ -238,5 +238,7 @@ def make_lval(name, size_or_index=None):
 # Hence we don't return fully evaluated sub-expressions as constants, but as exp -> (INT|FLOAT) 
 # trees, which are valid input to evaluate_exp.
 def make_constant(v):
-    data_type = 'INT' if type(v) == int else 'FLOAT'
+    if isinstance(v,bool) or isinstance(v,int):  data_type = 'INT'
+    else: data_type = 'FLOAT'
+    
     return Tree(Token('RULE','exp'), [Token(data_type, str(v))])

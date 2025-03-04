@@ -97,7 +97,7 @@ def show_statement(s,depth=0):
                 return f"{prefix}{{\n{sdecls}{middle}{sstats}\n{prefix}}}\n"
             
             case _: 
-                raise Exception(f"Unrecognized rule: {rule} in statement {s}")
+                raise Exception(f"Unrecognized rule: {rule} in show_statement {s}")
     except Exception as e:
         print(f"show_statement: {e} when evaluating {rule} in {s.pretty()}")
         raise e       
@@ -148,7 +148,7 @@ def show_exp(e):
             s1, s2 = show_exp(e1), show_exp(e2)
             return f"{fun}({s1},{s2})"
         
-    raise BaseException(f"{rule} pattern not implemented in {e.pretty()}")
+    raise BaseException(f"{rule} pattern not implemented in show_exp {e}")
 
 
 def show_declaration(d):
@@ -172,7 +172,7 @@ def show_declaration(d):
             return f"{type} {name}[{sindex}] = [{svalues}] ;"
         
         case _: 
-            raise Exception(f"Unrecognized rule {rule} in declaration {d}")                    
+            raise Exception(f"Unrecognized rule {rule} in show_declaration {d}")                    
 
 def show_lval(v):
 #    if not hasattr(v, 'children'): return f"{v}" # Allow IDs to be lvals
