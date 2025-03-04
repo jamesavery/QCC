@@ -144,7 +144,7 @@ def type_statement(s,type_env):
             _, exp, s1, s2 = s.children
             t = type_exp(exp,type_env)
             if t != 'cbit' and t != 'int':
-                raise TypeError(f"Condition of if statement must be of type cbit or int (got {t})")
+                raise TypeError(f"Condition {show_exp(exp)} of if statement must be of type cbit or int (got {t})")
             
             t1, t2 = type_statement(s1,type_env), type_statement(s2,type_env)
             return t1 and t2
@@ -212,6 +212,21 @@ def type_statement(s,type_env):
                     raise TypeError(f"Procedure {name} expects argument {pn} of type {pt}, got {show_lval(lvals.children[i])}: {at}")
             return True
 
+def type_binop(t1,op,t2):
+    match(op):
+        case '+' | '-' | '*'| '%'|'**': 
+            return max_type(t1,t2)
+        case '/':
+            return 'float'
+        case '==' | '!=' | '<' | '>' | '<=' | '>=':
+            if max_type(t1,t2) is None:
+                return None
+            else:
+                return 'cbit'
+        case _:
+            raise Exception(f"type_binop: Unrecognized operator {op}")
+    
+
 
 def type_exp(e,type_env):
     # Is this a terminal (a leaf node), or does e have children?
@@ -239,10 +254,10 @@ def type_exp(e,type_env):
             case ['exp','BINOP','exp']: 
                 e1,binop,e2 = e.children
                 t1,t2 = type_exp(e1,type_env), type_exp(e2,type_env)
-                tm = max_type(t1,t2)
-                if(tm is None): 
+                t = type_binop(t1,binop,t2)
+                if(t is None): 
                     raise TypeError(f"Incompatible types {t1} and {t2} in {rule}")
-                return tm
+                return t
             
             case  ['exp','CMP','exp']:
                 e1,cmp,e2 = e.children
