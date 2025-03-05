@@ -263,7 +263,7 @@ def PE_declaration(d,value_env):
             case _:
                 raise Exception(f"PE_declaration: Unrecognized rule {rule} in {show_declaration(d)}")
     except Exception as e:
-        print(f"PE_statement: Error {e} evaluating rule {rule} for statement-node {show_statement(s)}")
+        print(f"PE_statement: Error {e} evaluating rule {rule} for statement-node {show_declaration(d)}")
         raise e
 
 # Partial evaluation of statements.
@@ -361,12 +361,6 @@ def PE_gate(g,env):
 #  - e' is a numerical value of the expression's type, if the expression is fully static, or the residual AST if it contained dynamic parts, and 
 #  - sigma specifies whether e was fully static, i.e., whether e' is just a number.
 def PE_exp(e,value_env):
-    # Is this a terminal (a leaf node), or does e have children?
-    match(node_name(e)):
-        case 'NUMERICAL_VALUE': return (e,True)        
-        case 'INT' | 'FLOAT':   return (literal_eval(e.value), True)
-        case 'NAMED_CONSTANT':  return (named_constants[e.value],True)
-
     # e has children to process.
     rule = node_rule(e, "exp")
     #print(f"PE_exp: {rule}: {show_exp(e)} with env={env}")
@@ -379,8 +373,7 @@ def PE_exp(e,value_env):
 
             case ['INT'] | ['FLOAT']:
                 [c] = e.children
-                n   = literal_eval(c.value)
-                return (make_constant(n),True)
+                return (c,True)
             
             case ['NAMED_CONSTANT']:
                 [c] = e.children
