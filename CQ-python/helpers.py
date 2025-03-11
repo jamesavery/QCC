@@ -111,6 +111,8 @@ def ast_to_yaml(node, indent=""):
 # Helper functions for interpretation
 named_constants = {'pi': np.pi}
 
+
+
 evaluate_binop = {
     '+': lambda x,y: x+y,
     '-': lambda x,y: x-y,
@@ -218,6 +220,9 @@ def make_if(condition, then_block, else_block):
 def make_while(condition, stat):
     return Tree( Token('RULE', 'statement'),
                 [Token('WHILE', 'while'), condition, stat])
+
+def make_exp(rule,children):
+    return Tree(Token('RULE',rule),children)
 
 def make_skip_statement():
     return make_block([],[])
