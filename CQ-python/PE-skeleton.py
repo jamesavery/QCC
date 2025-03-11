@@ -384,7 +384,7 @@ def PE_exp(e,value_env):
                 unop, e1 = e.children
                 (v1,v1_static) = PE_exp(e1,value_env)
                 if v1_static:
-                    n1 = evaluate_exp(e1,value_env)
+                    n1 = evaluate_exp(v1,value_env)
                     n  = evaluate_unop[unop](n1)
                     return (make_constant(n),True)
                 else:
@@ -411,7 +411,7 @@ def PE_exp(e,value_env):
                 (v1,v1_static) = PE_exp(e1,value_env)
                 
                 if v1_static:
-                    n1 = evaluate_exp(e1,value_env)
+                    n1 = evaluate_exp(v1,value_env)
                     n  = evaluate_fun[fun](n1)
                     return (make_constant(n),True)
                 else:
@@ -424,7 +424,7 @@ def PE_exp(e,value_env):
                 (v2,v2_static) = PE_exp(e2,value_env)
 
                 if v1_static and v2_static:
-                    n1, n2 = evaluate_exp(e1,value_env), evaluate_exp(e2,value_env)
+                    n1, n2 = evaluate_exp(v1,value_env), evaluate_exp(v2,value_env)
                     n      = evaluate_fun[fun](n1,n2)
                     return (make_constant(n),True)
                 else:
@@ -439,7 +439,7 @@ def PE_exp(e,value_env):
                     n = evaluate_lval(name,index,value_env)                    
                     return (make_constant(n),True)
                 else:
-                    return (lval0,False)
+                    return (make_exp('lval',[lval0]),False)
 
             case _:
                 raise Exception(f"PE_exp: Unrecognized rule {rule} in {show_exp(e)}")
