@@ -4,8 +4,8 @@ from lark.lexer import Token
 
 from helpers import *
 from show import *
-from show import *
 from type import *
+
 # We recurse through the abstract syntax tree using a set of mutually recursive functions,
 # one for each node type in the AST (corresponding to rules in the grammar):
 # exp(e,env):
@@ -255,13 +255,14 @@ def PE_declaration(d,value_env):
     try:
         match(rule):
             case ['TYPE','lval']: # Zero initialization
-            
+                implement_this
             case ['TYPE','ID','exp']: # TYPE ID '[' exp ']': Scalar initialization; lval always resolved.
-
+                implement_this                
             case ['TYPE','ID','INT','exps']: # Array declaration with initialization 
-
+                implement_this
             case _:
                 raise Exception(f"PE_declaration: Unrecognized rule {rule} in {show_declaration(d)}")
+
     except Exception as e:
         print(f"PE_statement: Error {e} evaluating rule {rule} for statement-node {show_declaration(d)}")
         raise e
@@ -281,21 +282,21 @@ def PE_statement(s,value_env):
     try:
         match(rule):
             case ['lval', 'EQ', 'exp']: # Assignment
-                
+                implement_this
             case ['IF', 'exp', 'statement', 'statement']:
-            
+                implement_this
             case ['WHILE', 'exp', 'statement']:
-                
+                implement_this
             case ['block']:
-                
+                implement_this
             case ['qupdate']:
-            
+                implement_this
             case ['qupdate','IF','lval']:
-            
+                implement_this
             case ['MEASURE','lval','lval']:
-            
+                implement_this
             case ['procedure_call']:
-            
+                implement_this
             case _:
                 raise Exception(f"PE_statement: Unrecognized rule {rule} in {show_statement(s)}")
     
@@ -317,9 +318,9 @@ def PE_qupdate(q,env):
     try:
         match(rule):
             case ['gate','lval']:
-
+                implement_this
             case ['lval', 'SWAP', 'lval']:
-
+                implement_this
             case _:
                 raise Exception(f"PE_qupdate: Unrecognized rule {rule} in {show_qupdate(q)}")
     except Exception as e:
@@ -361,6 +362,12 @@ def PE_gate(g,env):
 #  - e' is a numerical value of the expression's type, if the expression is fully static, or the residual AST if it contained dynamic parts, and 
 #  - sigma specifies whether e was fully static, i.e., whether e' is just a number.
 def PE_exp(e,value_env):
+    # Is this a terminal (a leaf node), or does e have children?
+    match(node_name(e)):
+        case 'NUMERICAL_VALUE': return (e,True)        
+        case 'INT' | 'FLOAT':   return (literal_eval(e.value), True)
+        case 'NAMED_CONSTANT':  return (named_constants[e.value],True)
+
     # e has children to process.
     rule = node_rule(e, "exp")
     #print(f"PE_exp: {rule}: {show_exp(e)} with env={env}")
@@ -373,7 +380,8 @@ def PE_exp(e,value_env):
 
             case ['INT'] | ['FLOAT']:
                 [c] = e.children
-                return (c,True)
+                n   = literal_eval(c.value)
+                return (make_constant(n),True)
             
             case ['NAMED_CONSTANT']:
                 [c] = e.children
@@ -440,12 +448,10 @@ def PE_exp(e,value_env):
                     return (make_constant(n),True)
                 else:
                     return (make_exp('lval',[lval0]),False)
-
             case _:
                 raise Exception(f"PE_exp: Unrecognized rule {rule} in {show_exp(e)}")
-    
-    except Exception as e:
-        print(f"PE_exp: Error {e} evaluating rule {rule} for exp-node {show_exp(e)}")
-        raise e
 
+    except Exception as e:
+        print(f"PE_exp: {e} when evaluating {rule} in {e.pretty()}")
+        raise e
 
