@@ -114,13 +114,16 @@ def evaluate_lval(id, index_exp, env):
     
     try:
         if(index_exp is None):
-            return env[scope][name]
+            if name in env[scope]:
+                return env[scope][name]
+            else:
+                raise Exception(f"evaluate_lval: {name} not found in scope {env[scope]}")
         else:
             n_index = evaluate_exp(index_exp, env)
             return env[scope][name][n_index]
-    except Exception as e:
+    except Exception as ex:
         print(f"evaluate_lval: Error {e} evaluating {name}[{index_exp}] in {env}")
-        raise e
+        raise ex
 
 
 def evaluate_exp(e, env):
@@ -211,7 +214,12 @@ def PE_lval(v,env):
         name = f"{id}"
         match(rule):
             case ['ID']:       
-                return (result, name,None, True)
+                scope = lookup_scope(name,env)
+                static = scope != -1
+                if static:
+                    return (result, name, None, True)
+                else:
+                    return (result, name,None, False)
             case ['ID','INT']: 
                 [_,size_or_index] = v.children
                 return (result, name,make_constant(size_or_index.value), True)
@@ -324,7 +332,7 @@ def PE_qupdate(q,env):
             case _:
                 raise Exception(f"PE_qupdate: Unrecognized rule {rule} in {show_qupdate(q)}")
     except Exception as e:
-        print(f"PE_qupdate: Error {e} evaluating rule {rule} for qupdate-node {show_qupdate(q)}")
+        print(f"PE_qupdate: Error {e} evaluating rule {rule} for qupdate-node {q}")
         raise e
         
 
@@ -349,9 +357,9 @@ def PE_gate(g,env):
                 return result
             case _:
                 raise Exception(f"PE_gate: Unrecognized rule {rule} in {show_gate(g)}")
-    except Exception as e:
-        print(f"PE_gate: Error {e} evaluating rule {rule} for gate-node {show_gate(g)}")
-        raise e
+    except Exception as ex:
+        print(f"PE_gate: Error {ex} evaluating rule {rule} for gate-node {g}")
+        raise ex
         
 
 # Partial evaluation of expressions
@@ -447,11 +455,11 @@ def PE_exp(e,value_env):
                     n = evaluate_lval(name,index,value_env)                    
                     return (make_constant(n),True)
                 else:
-                    return (make_exp('lval',[lval0]),False)
+                    return (make_exp([lval0]),False)
             case _:
                 raise Exception(f"PE_exp: Unrecognized rule {rule} in {show_exp(e)}")
 
-    except Exception as e:
-        print(f"PE_exp: {e} when evaluating {rule} in {e.pretty()}")
-        raise e
+    except Exception as ex:
+        print(f"PE_exp: {ex} when evaluating {rule} in {e}")
+        raise ex
 
