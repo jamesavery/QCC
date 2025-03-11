@@ -180,6 +180,50 @@ def lookup_scope(l, env):
         if name in V: return len(env)-i-1
     return -1
 
+# Helper functions for keeping track of scope for unique variable naming:
+# used by vars.py and flatten.py
+def new_scope(scoped_name_env):
+    scoped_name_env[0]['?scope_id_max'] += 1
+    scope_id = scoped_name_env[0]['?scope_id_max']
+    return {'?scope_id': scope_id, '?scope_index': len(scoped_name_env)-1}
+
+def scope_id(lval,scoped_name_env):
+    scope_index = lookup_scope(lval,scoped_name_env)
+    return scoped_name_env[scope_index]['?scope_id']
+
+def scope_and_name(lval, scoped_name_env):
+    name = lval_name(lval)
+    scope_ix = lookup_scope(name,scoped_name_env)
+    scope_id = scoped_name_env[scope_ix]['?scope_id']
+    return (name, scope_id)
+
+def scoped_name(lval,scoped_name_env):
+    (name,scope_id) = scope_and_name(lval,scoped_name_env)
+    return f"{name}_{scope_id}" if scope_id > 0 else f"{name}"
+
+def typeof_declaration(d):
+    rule = node_rule(d, "declaration")
+    match(rule):
+        case ['TYPE','lval']:     # Scalar or array-declaration without initialization (0-initialize)
+            type, lval = d.children
+            lval_rule = [node_name(c) for c in lval.children]
+            match(lval_rule):
+                case ['ID']: 
+                    [name] = lval.children
+                    return (f"{name}", f"{type}")
+                case ['ID','INT']: 
+                    [name,size] = lval.children
+                    return (f"{name}", f"{type}[{size}]")
+                
+        case ['TYPE','ID',_]: # Scalar declaration with initialization
+            type, name, exp = d.children
+            return (f"{name}", f"{type}")
+
+        case ['TYPE','ID',_,'exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
+            type, name, exp_size, values = d.children
+            size     = literal_eval(exp_size)
+            return (f"{name}", f"{type}[{size}]")
+
 
 def max_type(t1,t2):
     try:
@@ -188,6 +232,7 @@ def max_type(t1,t2):
         return scalar_types[max(i1,i2)]
     except:
         return None
+
 
 
 ########### HELPER FUNCTION FOR BUILDING LARK AST NODES. ADD MORE AS NEEDED ############
@@ -221,8 +266,8 @@ def make_while(condition, stat):
     return Tree( Token('RULE', 'statement'),
                 [Token('WHILE', 'while'), condition, stat])
 
-def make_exp(rule,children):
-    return Tree(Token('RULE',rule),children)
+def make_exp(children):
+    return Tree(Token('RULE','exp'),children)
 
 def make_skip_statement():
     return make_block([],[])

@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from helpers import *
 from showcq  import *
-from type    import type_declaration
+from type    import typeof_declaration
 
 #########################################################################
 #                                                                       #

@@ -346,6 +346,30 @@ def type_declaration(d,type_env):
             return (f"{name}", f"{type}[{size}]")
 
 
+# Extract declaration type without type-checking (i.e. does not assert valid types in subex, and hence doesn't need type_env)
+def typeof_declaration(d):
+    rule = node_rule(d, "declaration")
+    match(rule):
+        case ['TYPE','lval']:     # Scalar or array-declaration without initialization (0-initialize)
+            type, lval = d.children
+            lval_rule = [node_name(c) for c in lval.children]
+            match(lval_rule):
+                case ['ID']: 
+                    [name] = lval.children
+                    return (f"{name}", f"{type}")
+                case ['ID','INT']: 
+                    [name,size] = lval.children
+                    return (f"{name}", f"{type}[{size}]")
+                
+        case ['TYPE','ID',_]: # Scalar declaration with initialization
+            type, name, exp = d.children
+            return (f"{name}", f"{type}")
+
+        case ['TYPE','ID',_,'exps'] | ['TYPE','ID','INT','exps']: # Array declaration with initialization 
+            type, name, exp_size, values = d.children
+            size     = literal_eval(exp_size)
+            return (f"{name}", f"{type}[{size}]")
+        
 
 def type_gate(g,type_env):
     rule = node_rule(g, "gate")
