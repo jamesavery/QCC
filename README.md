@@ -1,4 +1,4 @@
-# 12/3/2025: 
+# 12/3/2025: Week 6
 
 ## Lecture: 
 
@@ -34,7 +34,11 @@ The various helper code is on the github repository here: http://github.com/jame
 
 There is a reference implementation of the CQ partial evaluator provided as `PEjames.py`, in case you didn't get your own to work.
 
-# 5/3/2025: 
+# 5/3/2025: Week 5
+
+## Lecture
+Bjarnes pictures of the blackboard part of the lecture are here:
+http://www.nbi.dk/~avery/QCC/blackboards/2025/w5.zip
 
 ## Topic overview:
 
@@ -94,7 +98,7 @@ with variables declared at the top. Only loops that depend on quantum operations
 The jupyter file `datalab5.3.ipynb` has helpful examples to test with.
 
 
-# 26/2/2025
+# 26/2/2025: Week 4
 
 ## Lecture
 Here are the slides from today's lecture, which includes the data lab problem descriptions. Enjoy!
@@ -102,7 +106,7 @@ Here are the slides from today's lecture, which includes the data lab problem de
 http://www.nbi.dk/~avery/QCC/qcc2.pdf
 
 
-# 19/2/2025
+# 19/2/2025: Week 3
 Here are the slides from today's lecture:
 
 http://www.nbi.dk/~avery/QCC/qcc1.pdf
