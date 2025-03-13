@@ -226,10 +226,13 @@ def PE_lval(v,env):
             case ['ID','exp']: 
                 [_,exp]    = v.children
                 #print(f"PE_lval: {name}[{show_exp(exp)}]")
-                (size_or_index,static) = PE_exp(exp,env)
+                (size_or_index,static_index) = PE_exp(exp,env)
                 result = make_lval(name,size_or_index)
                 
-                if static:
+                scope = lookup_scope(name,env)
+                static = scope != -1
+
+                if static and static_index:
                     #print(f"resolved: {(name,size_or_index,True)}")
                     return (result,name,size_or_index, True)
                 else:
