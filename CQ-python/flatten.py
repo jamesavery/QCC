@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from helpers import *
 from showcq  import *
-from type    import type_declaration
+from type    import typeof_declaration
 from vars    import *
 
 #########################################################################
@@ -134,25 +134,25 @@ def scoped_name_lval(lval,scoped_name_env):
 
 def scoped_name_exp(e,scoped_name_env):
     # Expressions will never write to variables, only read from them
-    result = deepcopy(e)
 
     if(not hasattr(e, 'children')):
         match(node_name(e)):
             case 'ID': 
-                result = Tree(Token('RULE','exp'),[Token('ID',scoped_name(e,scoped_name_env))])
-                return result
-            case    _: return result
+                return make_exp('lval',[make_lval(scoped_name(e,scoped_name_env))])
+            case    _: return deepcopy(e)
 
     rule = node_rule(e, "exp")
-        
+    result = deepcopy(e)
+    
     match(rule):
         case [_]: # Redundant exp node
            [exp] = e.children
-           result = scoped_name_exp(exp,scoped_name_env)
+           return scoped_name_exp(exp,scoped_name_env)
         case ['UNOP', _] | ['BUILTIN_FUN1',_]:       # Unary operation node
             unop,exp = e.children
-            result = scoped_name_exp(exp,scoped_name_env)
-
+            scoped_exp = scoped_name_exp(exp,scoped_name_env)
+            result.children = [unop,scoped_exp]
+        
         case [_,'BINOP',_] | [_,'PE',_] | [_,'MD',_] | [_,'AS',_] | [_,'CMP',_]:  # Binary operation node
             exp1, binop, exp2 = e.children
             V1, V2 = scoped_name_exp(exp1,scoped_name_env), scoped_name_exp(exp2,scoped_name_env)
