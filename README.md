@@ -1,3 +1,11 @@
+# 17/3/2025: Elaboration on synthesis assignment
+
+I have received some questions about the gate synthesis assignment, in particular what representation to use for the synthesized gates. 
+
+The thought is to introduce new AST nodes for the instruction set (by defining a helper function similar to the other make_xxx in helpers.py), and rewrite the PE'd AST to replace the CQ gates with elementary "instruction set" gates. However, those of you who just generated a list of strings did fine as well - the goal is to learn how to do the synthesis (and it is very easy to adapt your code to generate nodes). Apologies for not making this clearer.
+
+There is no need to modify the CQ.lark grammar file.
+
 # 12/3/2025: Week 6
 
 ## Lecture: 
