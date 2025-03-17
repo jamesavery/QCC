@@ -138,7 +138,7 @@ def scoped_name_exp(e,scoped_name_env):
     if(not hasattr(e, 'children')):
         match(node_name(e)):
             case 'ID': 
-                return make_exp('lval',[make_lval(scoped_name(e,scoped_name_env))])
+                return make_exp([make_lval(scoped_name(e,scoped_name_env))])
             case    _: return deepcopy(e)
 
     rule = node_rule(e, "exp")
