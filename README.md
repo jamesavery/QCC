@@ -1,6 +1,6 @@
 # 18/3/2025: Fix for decomposition formula.
 
-There was a mistake on the blackboard during the lecture when calculating the ZYZ-decomposition: numpy's atan2 is called as atan2(y,x), not atan2(x,y), so atan2(ra,rb) should be replaced by atan2(rb,ra) in the calculation of beta. See git issue #4: https://github.com/jamesavery/QCC/issues/4.
+There was a mistake on the blackboard during the lecture when calculating the ZYZ-decomposition: numpy's atan2 is called as atan2(y,x), not atan2(x,y), so atan2(ra,rb) should be replaced by atan2(rb,ra) in the calculation of beta. See git issue https://github.com/jamesavery/QCC/issues/4.
 
 # 17/3/2025: Elaboration on synthesis assignment
 
