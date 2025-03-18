@@ -3,7 +3,7 @@ Reading instructions:
 
 This week's lecture will be on Topology Mapping and the Routing problem for running quantum programs on existing hardware with limited
 entanglement-connectivity. Almost all quantum device architectures allow entanglement only between "neighbour" qubits in some topology.
-Thus, to perform a CNOT, we need to first move the qubits to be entangled through a series of SWAP (=3xCNOT) to become neighbours. This is one of the roadblocks standing in the way of quantum advantage.
+Thus, to perform a CNOT, we need to first move the control and target qubits through a series of SWAP (=3xCNOT) to become neighbours. This is one of the roadblocks standing in the way of quantum advantage.
 
 Reading material:
 
