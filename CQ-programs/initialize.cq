@@ -9,5 +9,7 @@ initialize_2qubit(float a[4], qbit q[2])
     not q[0];
     Ry(th3) q[1] if q[0];
     not q[0];
+
+    q[0] <> q[1];
 }
 
