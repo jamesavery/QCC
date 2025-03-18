@@ -1,4 +1,4 @@
-%import .expression (INT, FLOAT, BUILTIN_FUN1, BUILTIN_FUN2, NAMED_CONSTANT, PE,MD,AS,CMP, ID,  exp, exp1, exp2, exp3, exp4,lval)
+%import .expression (INT, FLOAT, BUILTIN_FUN1, BUILTIN_FUN2, NAMED_CONSTANT, PE,MD,AS,CMP, ID, UNOP, exp, exp1, exp2, exp3, exp4,lval)
 
 // A program is a sequence of procedure declarations. The first procedure is the entry point (like 'main' in C/C++).
 program: procedure+
