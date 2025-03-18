@@ -9,6 +9,7 @@ Reading material:
 
 Peham, Burgholzer, and Wille: "Optimal subarchitectures for Quantum
 Circuit Mapping". https://arxiv.org/pdf/2210.09321
+
 Zulehner, Paler, and Wille: "An Efficient Methodology for Mapping
 Quantum Circuits to the IBM QX Architectures".
 https://arxiv.org/pdf/1712.04722
