@@ -1,9 +1,11 @@
-# 19/3/2025: Week 7
+# 19/3/2025: Week 7 [slides and data lab assignments updated @ 15:10]
 Reading instructions:
 
 This week's lecture will be on Topology Mapping and the Routing problem for running quantum programs on existing hardware with limited
 entanglement-connectivity. Almost all quantum device architectures allow entanglement only between "neighbour" qubits in some topology.
 Thus, to perform a CNOT, we need to first move the control and target qubits through a series of SWAP (=3xCNOT) to become neighbours. Doing this optimally is an NP hard problem, and is one of the current roadblocks standing in the way of quantum advantage.
+
+The lecture from today is here: http://www.nbi.dk/~avery/QCC/qcc6.pdf
 
 Reading material:
 
@@ -16,9 +18,20 @@ https://arxiv.org/pdf/1712.04722
 
 Data lab:
 
-We will work on completing the gate synthesis code you started on last week, and extend it with CNOT routing for a simple topological qbit architecture. Since many are still catching up on prior weeks, the main focus will be on getting up to speed. Please don't hesitate to ask me for help, or use the issues at https://github.com/jamesavery/QCC/issues as a forum for questions where you can help each other as well.
+We will work on completing the gate synthesis code you started on last week, and extend it with CNOT routing for a simple topological qbit architecture. 
 
-I have uploaded simulate.py, which allows you to compute the unitary matrix semantics of a pure quantum CQ- program without measurements. This allows you to test that any transformation you make is semantics-preserving: this is the case if and only if `simulate_program(P)` and `simulate_program(transform(P))` yields the same matrix. You can use this to test correctness both for your gate synthesis from last week, and the routed synthesis for this week.
+1. Implement the swap-rewrite transformation using 3xCNOT or 3xCNOT+4H depending on direction.
+2. Compile the qft2.cq program to the following architectures:
+   2.1 a linear sub-architecture 0->1->2->...->d.
+   2.2 a circular sub-architecture 0->1->2->...->d->0.
+   
+At each step, check that the matrix semantics are preserved using simulate_program from simulate.py.
+
+Please pull from git, as show.py has been updated, and simulate.py has been added.
+
+Since many are still catching up on prior weeks, the main focus will be on getting up to speed (hence the simple assignment). Please don't hesitate to ask me for help also for work from prior weeks, or use the issues at https://github.com/jamesavery/QCC/issues as a forum for questions where you can help each other as well.
+
+I have updated simulate.py, which allows you to compute the unitary matrix semantics of a pure quantum CQ- program without measurements. This allows you to test that any transformation you make is semantics-preserving: this is the case if and only if `simulate_program(P)` and `simulate_program(transform(P))` yields the same matrix. You can use this to test correctness both for your gate synthesis from last week, and the routed synthesis for this week.
 
 # 18/3/2025: Fix for decomposition formula.
 
