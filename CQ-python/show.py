@@ -159,6 +159,10 @@ def show_declaration(d):
             type, lval = d.children
             return f"{type} {show_lval(lval)} ;"
         
+        case ['TYPE','ID']:
+            type, id = d.children
+            return f"{type} {id.value} ;" 
+
         case ['TYPE','ID','exp']: # Scalar declaration with initialization
             type, name, exp = d.children
             sindex = show_exp(exp)
@@ -207,10 +211,12 @@ def show_gate(g):
     rule = node_rule(g, "gate")
     
     match(rule):
-        case ['NOT']:
+        case ['NOT'] | ['X']:
             return "not"
         case ["H"]:
             return "H"
+        case ['SX']:
+            return "SX"            
         case ["rgate",_]:
             rgate, angle_exp = g.children
             [R] = rgate.children
