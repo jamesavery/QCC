@@ -92,7 +92,7 @@ def procedure_qbits_env(main):
     qbits_env = {}
     ix = 0
     for (name,size) in list(qbit_input) + list(qbit_auxiliary):
-        if size == 1:
+        if size is None:
             qbits_env[name] = ix
             ix += 1
         else:
@@ -127,6 +127,7 @@ def simulate_qupdate(qup, qbits_env, M):
     except Exception as e:
         print(f"simulate_qupdate: {e} when evaluating {rule} in {qup.pretty()}")
         raise e
+
 
 # Simulate a 2-qubit controlled qupdate statement as effect on d-qubit operator matrix M
 def simulate_controlled_qupdate(qup, control_lval, qbits_env, M):

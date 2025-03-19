@@ -6,6 +6,7 @@ import numpy as np
 import sys
 from copy import deepcopy
 
+
 # Lark nodes can be Token (corresponding to TERMINALS) or Tree (corresponding to nonterminals).
 # This helper function unifies the slightly different things you need to do to get their types: 
 def node_name(t):
@@ -243,7 +244,7 @@ def params_of_type(params, t):
             case ['TYPE','ID']:
                 type, id = param.children
                 if(type == t):
-                    yield (id.value,1)
+                    yield (id.value,None)
             case ['TYPE','ID','INT']:
                 type, id, size = param.children
                 if(type == t):
@@ -265,13 +266,13 @@ def decls_of_type(decls, t):
                     (lval0,name, size, static) = PE_lval(lval)
                     assert(static)
                     if(size == None):
-                        yield (name,1)
+                        yield (name,None)
                     else:
-                        yield (name, evaluate_exp(size))
+                        yield (name, int(size.children[0].value))
             case ['TYPE','ID','exp']: # TYPE ID = exp, scalar iniialization
                 type, id, exp = decl.children
                 if(type == t):
-                    yield (id.value, 1)
+                    yield (id.value, None)
             case ['TYPE','ID','INT','exp']: # TYPE ID[INT] = exp, array initialization                    
                 type, id, size, _ = decl.children
                 if(type == t):
