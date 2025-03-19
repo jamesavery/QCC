@@ -6,7 +6,7 @@ import numpy as np
 from helpers import *
 from show import *
 from type import *
-from PE import evaluate_exp, PE_lval
+from PEjames import evaluate_exp, PE_lval
 
 # simulate_program takes a #CQ- program as input: A single procedure with a single flat block of declarations and qupdate statements
 # This is the result of partially evaluating all the classical parts away from a CQ program and flattening using flatten.py.
