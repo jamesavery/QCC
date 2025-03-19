@@ -25,7 +25,7 @@ We will work on completing the gate synthesis code you started on last week, and
    2.1 a linear sub-architecture 0->1->2->...->d.
    2.2 a circular sub-architecture 0->1->2->...->d->0.
    
-At each step, check that the matrix semantics are preserved using simulate_program from simulate.py.
+At each step, check that the matrix semantics are preserved using simulate_program from simulate.py (remember to apply it to the flattened program using flatten.py).
 
 Please pull from git, as show.py has been updated, and simulate.py has been added.
 
