@@ -233,6 +233,52 @@ def max_type(t1,t2):
     except:
         return None
 
+    
+def params_of_type(params, t):
+    
+    for param in params.children:
+        rule = node_rule(param, "parameter_declaration")
+
+        match(rule):
+            case ['TYPE','ID']:
+                type, id = param.children
+                if(type == t):
+                    yield (id.value,1)
+            case ['TYPE','ID','INT']:
+                type, id, size = param.children
+                if(type == t):
+                    yield (id.value, int(size.value))
+            case ['TYPE','ID','ID']:
+                type, id, size = param.children
+                if(type == t):
+                    raise Exception(f"params_of_type: input parameter {id} has dynamic size {size}")
+            case _:
+                raise Exception(f"params_of_type: Unrecognized rule {rule} in parameter_declaration {param}")
+            
+def decls_of_type(decls, t):
+    for decl in decls.children:
+        rule = node_rule(decl, "declaration")
+        match(rule):
+            case ['TYPE','lval']:
+                type, lval = decl.children
+                if(type == t):
+                    (lval0,name, size, static) = PE_lval(lval)
+                    assert(static)
+                    if(size == None):
+                        yield (name,1)
+                    else:
+                        yield (name, evaluate_exp(size))
+            case ['TYPE','ID','exp']: # TYPE ID = exp, scalar iniialization
+                type, id, exp = decl.children
+                if(type == t):
+                    yield (id.value, 1)
+            case ['TYPE','ID','INT','exp']: # TYPE ID[INT] = exp, array initialization                    
+                type, id, size, _ = decl.children
+                if(type == t):
+                    yield (id.value, int(size.value))
+            case _:
+                raise Exception(f"decls_of_type: Unrecognized rule {rule} in declaration {decl}")
+
 
 
 ########### HELPER FUNCTION FOR BUILDING LARK AST NODES. ADD MORE AS NEEDED ############
