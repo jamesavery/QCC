@@ -20,7 +20,7 @@ Data lab:
 
 We will work on completing the gate synthesis code you started on last week, and extend it with CNOT routing for a simple topological qbit architecture. 
 
-1. Implement the swap-rewrite transformation using 3xCNOT or 3xCNOT+4H depending on direction.
+1. Implement the swap-rewrite transformation using 3xCNOT+4H.
 2. Compile the qft2.cq program to the following architectures:
    2.1 a linear sub-architecture 0->1->2->...->d.
    2.2 a circular sub-architecture 0->1->2->...->d->0.
