@@ -6,7 +6,7 @@ import numpy as np
 from copy import deepcopy
 
 from helpers import *
-from showcq  import *
+from show    import *
 from type    import typeof_declaration
 
 #########################################################################
@@ -80,7 +80,6 @@ def vars_statement(s,scoped_name_env,seen_scopes):
 
             (R,W) = (v_reads, v_writes)
 
-    #print(f"vars_statement({showcq_statement(s)}): (R,W) = ({R},{W})")
     return (R,W)
 
 def vars_declaration(d,scoped_name_env):
@@ -93,7 +92,6 @@ def vars_declaration(d,scoped_name_env):
         case ['TYPE','lval']: # Scalar variable declaration
             [_,lval] = d.children
             # First add the variable to the current scope, so it will resolve correctly
-            #print(f"declaration {showcq_declaration(d)}:{rule} has name {name}")
             scope = scoped_name_env[-1]
             scope[name] = (type,scope['?scope_id'])
             # Then look up the lval base, and variables referenced in its index expression
@@ -124,7 +122,6 @@ def vars_declaration(d,scoped_name_env):
 
             R,W = (v_reads.union(s_reads,e_reads), v_writes)
     
-    #print(f"vars_declaration({showcq_declaration(d)}): {(R,W)})")
     return R,W
 
 
@@ -143,7 +140,6 @@ def vars_qupdate(qupdate,scoped_name_env):
             (v1_reads, v1_writes) = vars_lval(lval1,scoped_name_env)
             (v2_reads, v2_writes) = vars_lval(lval2,scoped_name_env)
             R,W = (v1_reads.union(v2_reads), v1_writes.union(v2_writes))            
-    #print(f"vars_qupdate({showcq_qupdate(qupdate)}): (R,W) = ({R},{W})")
     return (R,W)
 
 
@@ -163,7 +159,6 @@ def vars_lval(lval,scoped_name_env):
             V2 = vars_exp(e1,scoped_name_env)
             R,W = (V2, V1)
 
-    #print(f"vars_lval({showcq_lval(lval)}): (R,W) = ({R},{W})")            
     return (R,W)
 
 

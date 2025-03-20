@@ -6,7 +6,7 @@ import numpy as np
 from copy import deepcopy
 
 from helpers import *
-from showcq  import *
+from show    import *
 from type    import typeof_declaration
 from vars    import *
 
@@ -56,16 +56,13 @@ def flatten_procedure(p):
 
     unique_statement = scoped_name_statement(stat, scoped_name_env)
 
-    #print(f"unique_statements: {showcq_statement(unique_statement)}")
     flat_statements = flatten_statement(unique_statement,'block')
 
     # print(f"Flattened procedure statements:")
     # for c in flat_statements:
-    #     print(f"  {showcq_statement(c)}")
 
     # print(f"Flattened declarations:")
     # for d in flat_declarations:
-    #     print(f"  {showcq_declaration(d)}")
     
 
     return make_procedure(name, params.children,
@@ -128,7 +125,6 @@ def scoped_name_lval(lval,scoped_name_env):
             
             result.children = [Token('ID', name),V2]
     
-    #print(f"scoped_name_lval({showcq_lval(lval)}) = {showcq_lval(result)}")
     return result
 
 
@@ -178,7 +174,6 @@ def scoped_name_exp(e,scoped_name_env):
         case _:
             raise Exception(f"Unrecognized rule {rule} in exp {scoped_name_exp(e)}")        
 
-    #print(f"scoped_name_exp({showcq_exp(e)}) = {showcq_exp(result)} in environment {scoped_name_env}")
     return result
 
 
@@ -236,7 +231,6 @@ def scoped_name_statement(s,scoped_name_env):
             
             result = make_block(decls0, stats0)
 
-    #print(f"scoped_name_statement({showcq_statement(s)}) = {showcq_statement(result)}")
     return result
 
 
@@ -252,7 +246,6 @@ def scoped_name_declaration(d,scoped_name_env):
         case ['TYPE','lval']: # Scalar variable declaration
             [TYPE,lval] = d.children
             # First add the variable to the current scope, so it will resolve correctly
-            #print(f"declaration {showcq_declaration(d)}:{rule} has name {name}")
             scope = scoped_name_env[-1]
             scope[name] = (type,scope['?scope_id'])
             # Then look up the lval base, and variables referenced in its index expression
@@ -282,7 +275,6 @@ def scoped_name_declaration(d,scoped_name_env):
             result.children[:3] = [TYPE,lval0,e_size0]
             result.children[3].children = exps0
 
-    #print(f"scoped_name_declaration({showcq_declaration(d)}) = {showcq_declaration(result)}")
     return result
 
 def scoped_name_qupdate(qupdate,scoped_name_env):
@@ -302,7 +294,6 @@ def scoped_name_qupdate(qupdate,scoped_name_env):
             l2 = scoped_name_lval(lval2,scoped_name_env)
             result.children = [l1,SWAP,l2]
 
-    #print(f"scoped_name_qupdate({showcq_qupdate(qupdate)}) = {showcq_qupdate(result)}")
     return result
 
 

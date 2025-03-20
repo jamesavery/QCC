@@ -1,5 +1,5 @@
 from show import *
-from showcq import *
+from show import *
 from helpers import *
 from ast import literal_eval
 
@@ -63,7 +63,6 @@ def type_parameter_declaration(d,type_env):
 
 def type_lval(l,type_env):
     rule = node_rule(l, "lval")
-    #print(f"type_lval: {rule} in {showcq_lval(l)}")
     match(rule):
         case ['ID']: 
             [name] = l.children
@@ -389,7 +388,6 @@ def type_qupdate(q,type_env):
     match(rule):
         case ['gate', 'lval']:
             [gate,lval] = q.children
-            #print(f"type_qupdate: {rule} in {show_qupdate(q)}: {showcq_gate(gate)} {showcq_lval(lval)}")            
             t1 = type_gate(gate,type_env)
             t2 = type_lval(lval,type_env)
             #print(f"t1 = {t1}, t2 = {t2}")
