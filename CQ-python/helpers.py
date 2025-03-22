@@ -319,8 +319,7 @@ def make_exp(children):
 def make_skip_statement():
     return make_block([],[])
 
-def make_block(declarations, statements, condense="No longer used, kept for API compatibility"):
-        
+def make_block(declarations, statements):
     return Tree(Token('RULE','statement'),[Tree(Token('RULE', 'block'), 
                 [Tree(Token('RULE', 'declarations'), declarations), 
                  Tree(Token('RULE', 'statements'),   statements)])])
@@ -339,3 +338,19 @@ def make_constant(v):
     else: data_type = 'FLOAT'
     
     return Tree(Token('RULE','exp'), [Token(data_type, str(v))])
+
+def make_gate(name, *args):
+    if name[0] == 'R':
+        theta = args[0]
+        return Tree('gate', [Tree('rgate', [Token('__ANON_1', name)]), make_exp([make_constant(theta)])])
+    else:
+        return Tree('gate', [Token(name.upper(), name)])
+    
+def make_statement(children):
+    return Tree(Token('RULE', 'statement'), children)
+
+def make_qupdate(gate, lval):
+    return Tree(Token('RULE', 'qupdate'), [gate, lval])
+
+def make_controlled_qupdate(control_lval, target_lval, gate, *args):
+    return make_statement([make_qupdate(gate, target_lval), Token('IF', 'if'), control_lval])

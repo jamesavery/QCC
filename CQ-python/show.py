@@ -99,7 +99,7 @@ def show_statement(s,depth=0):
             case _: 
                 raise Exception(f"Unrecognized rule: {rule} in show_statement {s}")
     except Exception as e:
-        print(f"show_statement: {e} when evaluating {rule} in {s.pretty()}")
+        print(f"show_statement: {e} when evaluating {rule} in {s}")
         raise e       
         
 
@@ -113,7 +113,7 @@ def show_exp(e):
     try:
         rule  = [node_name(c) for c in e.children]
     except:
-        raise f"AST error in {e.pretty()}"
+        raise f"AST error in {e}"
         
     
     match(rule):
