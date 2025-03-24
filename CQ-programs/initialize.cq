@@ -4,12 +4,10 @@ initialize_2qubit(float a[4], qbit q[2])
     float th2 = 2*arctan2(a[3],a[1]); 
     float th3 = 2*arctan2(a[2],a[0]);
 
-    Ry(th1) q[0];
-    Ry(th2) q[1] if q[0];
-    not q[0];
-    Ry(th3) q[1] if q[0];
-    not q[0];
-
-    q[0] <> q[1];
+    Ry(th1) q[1];
+    Ry(th2) q[0] if q[1];
+    not q[1];
+    Ry(th3) q[0] if q[1];
+    not q[1];
 }
 
