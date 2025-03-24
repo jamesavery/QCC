@@ -68,7 +68,7 @@ def show_statement(s,depth=0):
             case ['qupdate','IF','lval']:# Conditional quantum update
                 [qupdate,_,lval] = s.children
                 sq, sc = show_qupdate(qupdate), show_lval(lval)
-                return f"{prefix}{sq} if {sc}) ;"
+                return f"{prefix}{sq} if {sc} ;"
 
             case ['MEASURE','lval','lval']: # qbit measurement
                 [_,qbit,cbit]   = s.children
