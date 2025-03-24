@@ -1,4 +1,4 @@
-/* qft.dq -- a quantum Fourier transform implemented in DQ */
+/* qft.dq -- a quantum Fourier transform implemented in CQ */
 
 qft(qbit q[d])
 {
