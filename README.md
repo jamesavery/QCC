@@ -1,5 +1,36 @@
+# 26/3/2025: Week 8
+## Topic: Optimization techniques and the ZX Calculus
+
+Robin Kaarsgaard Sales from SDU will lecture Wednesday 3/4 on ZX Calculus and circuit optimization. I will be there for the lab session to help out with your code as usual.
+
+## Reading instructions:
+
+The first 5 sections + the "ZX Cheat Sheet" in Appendix A from John van de Wetering's "ZX-calculus for the working quantum computer scientist", which is found here: https://arxiv.org/pdf/2012.13966.pdf
+
+## Data lab
+# 3/4/2024: Data lab
+
+The task this week will be to add a small optimization stage to your CQ compiler based on ZX calculus.
+
+Use the PyZX library, which you install using `pip install pyzx`, and can read how to use here:  https://pyzx.readthedocs.io/en/latest/
+
+In the new file zx_semantics.py, you will find a small program for translating a flat CQ- AST into a PyZX circuit:
+	zxc = zx_semantics(flattened_program)
+which you can visualize using
+   pyzx.draw(zxc)
+
+More instructions will follow. 
+
+## Advertisement for Advanced Topics in Programming Languages: Hybrid Quantum-Classical Programming
+
+If you found quantum compilers interesting, consider following our ATPL course on Hybrid Quantum-Classical programming in the fall:
+https://kurser.ku.dk/course/ndak24007u/2024-2025
+
+This is a course with a high degree of self-determination, as you will be able to choose a topic yourself to delve into and present in a mini-project. It is particularly useful in preparation for writing a master's thesis. 
+
+
 # 19/3/2025: Week 7 [slides and data lab assignments updated @ 15:10]
-Reading instructions:
+## Reading instructions:
 
 This week's lecture will be on Topology Mapping and the Routing problem for running quantum programs on existing hardware with limited
 entanglement-connectivity. Almost all quantum device architectures allow entanglement only between "neighbour" qubits in some topology.
@@ -16,7 +47,7 @@ Zulehner, Paler, and Wille: "An Efficient Methodology for Mapping
 Quantum Circuits to the IBM QX Architectures".
 https://arxiv.org/pdf/1712.04722
 
-Data lab:
+## Data lab:
 
 We will work on completing the gate synthesis code you started on last week, and extend it with CNOT routing for a simple topological qbit architecture. 
 
