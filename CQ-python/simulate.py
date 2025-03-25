@@ -31,6 +31,7 @@ def simulate_program(P):
     decls, stats = main_block.children    
     for s in stats.children:
         M = simulate_statement(s, qbits_env, M)
+        #print(f"\nsimulate_statement: {show_statement(s)} -> \n{np.round(M.reshape(2**d,2**d),2)}")        
 
     return M
     
@@ -43,6 +44,10 @@ def gate_matrix(gate):
             return np.array([[0,1],[1,0]], dtype=complex)
         case ['SX']: 
             return np.array([[1+1j,1-1j],[1-1j,1+1j]], dtype=complex)/2
+        case ['SY']:
+            return np.array([[1+1j,-1-1j],[1+1j,1+1j]], dtype=complex)/2
+        case ['SZ']:
+            return np.array([[1,0],[0,1j]],dtype=complex)        
         case ['H']:   
             return np.array([[1,1],[1,-1]],dtype=complex)/np.sqrt(2)
         case ['rgate','exp']: 
@@ -80,11 +85,7 @@ def procedure_qbits_env(main):
     main_name, main_params, main_stat = main.children
     main_block = main_stat.children[0]
     assert(main_block.data == 'block')
-    try:
-        decls, stats = main_block.children
-    except:
-        print(main_block)
-        assert(False)
+    decls, stats = main_block.children
 
     qbit_input     = params_of_type(main_params,'qbit')
     qbit_auxiliary = decls_of_type(decls,'qbit')
@@ -101,6 +102,13 @@ def procedure_qbits_env(main):
                 ix += 1
     return qbits_env
 
+def tensorembed(G,d,k):
+    Ipre = np.eye(2**k)
+    m    = int(np.log2(len(G)))
+    Ipost = np.eye(2**(d-k-m))
+    return np.kron(np.kron(Ipre,G),Ipost)
+
+
 # Simulate a single qupdate statement as effect on d-qubit operator matrix M:
 # - Single-qubit gate: Compute gate 2x2 matrix and compute effect on M using tensor contraction
 # - SWAP: Swap qubits k and l by swapping axes in M (could also be done less efficiently using a 2x2x2x2 tensor and tensor contraction)
@@ -114,7 +122,11 @@ def simulate_qupdate(qup, qbits_env, M):
                 G = gate_matrix(gate)
                 qbit_full_name = show_lval(lval)
                 qbit_k = qbits_env[qbit_full_name]
-                return np.tensordot(G,M, axes=([0],[qbit_k]))
+                d = len(M.shape)//2
+                IGI = tensorembed(G,d,qbit_k)
+                #print(f"\t{show_gate(gate)} ->\n {np.round(IGI,2)}")
+                return (IGI @ M.reshape(2**d,2**d)).reshape([2]*2*d)
+                #return np.tensordot(G,M, axes=([0],[qbit_k]))
                 
             case ['lval','SWAP','lval']: # Array variable
                 [lval1,_,lval2] = qup.children
@@ -132,7 +144,8 @@ def simulate_qupdate(qup, qbits_env, M):
 # Simulate a 2-qubit controlled qupdate statement as effect on d-qubit operator matrix M
 def simulate_controlled_qupdate(qup, control_lval, qbits_env, M):
     rule = node_rule(qup, "qupdate")
-    
+    d = len(M.shape)//2
+
     try:
         control_full_name = show_lval(control_lval)    
         control_k = qbits_env[control_full_name]
@@ -145,20 +158,49 @@ def simulate_controlled_qupdate(qup, control_lval, qbits_env, M):
                 IG = controlled_matrix(G)
 
                 target_full_name  = show_lval(target_lval)
+                target_k = qbits_env[target_full_name]  
 
-                target_k  = qbits_env[target_full_name]
+                IGI = tensorembed(IG.reshape(4,4),d,0)
+                
+                Mp = M.copy()
 
-                return np.tensordot(IG,M, axes=([0,1],[control_k,target_k]))
+                match((control_k,target_k)):
+                    case (0,1):
+                        None; # Do nothing
+                    case (1,0):
+                        Mp = Mp.swapaxes(0,1).swapaxes(d,d+1)
+                    case _:
+                        Mp = Mp.swapaxes(control_k, 0).swapaxes(target_k, 1)
+                        Mp = Mp.swapaxes(d+target_k, d+1).swapaxes(d+control_k, d)
+
+                Mp = (IGI.reshape(2**d,2**d) @ Mp.reshape(2**d,2**d)).reshape([2]*2*d)
+
+                match((control_k,target_k)):
+                    case (0,1):
+                        None; # Do nothing
+                    case (1,0):
+                        Mp = Mp.swapaxes(d,d+1).swapaxes(0,1)
+                    case _:
+                        Mp = Mp.swapaxes(d+control_k, d).swapaxes(d+target_k, d+1)
+                        Mp = Mp.swapaxes(target_k, 1).swapaxes(control_k, 0)
+
+                return Mp
+
+                #return np.tensordot(IG,M, axes=([0,1],[control_k,target_k]))
             
             case ['lval','SWAP','lval']: # Array variable
-                [lval1,_,lval2] = qup.children
-                s1, s2 = show_lval(lval1), show_lval(lval2)
-                qbit_k, qbit_l = qbits_env[s1], qbits_env[s2]
+                raise f"simulate_controlled_qupdate: controlled SWAP {show_qupdate(qup)} not implemented"
+                # [lval1,_,lval2] = qup.children
+                # s1, s2 = show_lval(lval1), show_lval(lval2)
+                # qbit_k, qbit_l = qbits_env[s1], qbits_env[s2]
 
-                Gswap  = (np.eye(4).reshape((2,2,2,2)).swapaxes(1,2).swapaxes(2,3)).reshape((4,4))
-                IGswap = direct_sum(np.eye(2),Gswap).reshape((2,2,2,2,2,2))
+                # Gswap  = (np.eye(4).reshape((2,2,2,2)).swapaxes(1,2).swapaxes(2,3)).reshape((4,4))
+                # IGswap = direct_sum(np.eye(2),Gswap).reshape((2,2,2,2,2,2))
 
-                return np.tensordot(IGswap,M, axes=([0,1,2],[control_k,qbit_k,qbit_l]))
+                # IGI = tensorembed(IGswap,d,qbit_k)
+
+                # #return (IGI @ M.reshape(2**d,2**d)).reshape([2]*2*d)
+                # return np.tensordot(IGswap,M, axes=([0,1,2],[control_k,qbit_k,qbit_l]))
             case _:
                 raise Exception(f"simulate_controlled_qupdate: Unrecognized rule {rule} in {show_qupdate(qup)}")
     except Exception as e:
@@ -167,7 +209,6 @@ def simulate_controlled_qupdate(qup, control_lval, qbits_env, M):
 
 def simulate_statement(s,qbits_env, M):
     rule = node_rule(s, "statement")
-    
     try:
         match(rule):
             case ['lval', 'EQ', 'exp']: # Assignment
