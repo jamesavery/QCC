@@ -330,6 +330,11 @@ def make_lval(name, size_or_index=None):
     else: 
         return Tree(Token('RULE', 'lval'), [Token('ID', name), size_or_index])
     
+def make_lval_from_name(full_name):
+    lval_base      = array_base(full_name)
+    lval_index     = array_size(full_name)
+    return make_lval(lval_base, make_constant(int(lval_index)))
+    
 # We want the output from partial evaluation to be a valid CQ syntax tree. 
 # Hence we don't return fully evaluated sub-expressions as constants, but as exp -> (INT|FLOAT) 
 # trees, which are valid input to evaluate_exp.
@@ -342,15 +347,20 @@ def make_constant(v):
 def make_gate(name, *args):
     if name[0] == 'R':
         theta = args[0]
-        return Tree('gate', [Tree('rgate', [Token('__ANON_1', name)]), make_exp([make_constant(theta)])])
+        return Tree('gate', [Tree('rgate', [Token('__ANON_1', name)]), make_constant(theta)])
     else:
         return Tree('gate', [Token(name.upper(), name)])
     
 def make_statement(children):
     return Tree(Token('RULE', 'statement'), children)
 
-def make_qupdate(gate, lval):
+def make_qupdate(gate, lval): # TODO: SWAPS! 
     return Tree(Token('RULE', 'qupdate'), [gate, lval])
+
+def make_swap(lval1, lval2):
+    return Tree(Token('RULE', 'qupdate'), [Token('SWAP', 'swap'), lval1, lval2])
 
 def make_controlled_qupdate(control_lval, target_lval, gate, *args):
     return make_statement([make_qupdate(gate, target_lval), Token('IF', 'if'), control_lval])
+
+
