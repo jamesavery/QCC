@@ -1,4 +1,4 @@
-# 26/3/2025: Week 8
+# 26/3/2025: Week 8 [Updated lab exercise info 25/3]
 ## Topic: Optimization techniques and the ZX Calculus
 
 Robin Kaarsgaard Sales from SDU will lecture Wednesday 3/4 on ZX Calculus and circuit optimization. I will be there for the lab session to help out with your code as usual.
@@ -15,22 +15,29 @@ The task this week will be to add a small optimization stage to your CQ compiler
 Use the PyZX library, which you install using `pip install pyzx`, and can read how to use here:  https://pyzx.readthedocs.io/en/latest/
 
 In the new file zx_semantics.py, you will find a small program for translating a flat CQ- AST into a PyZX circuit:
+```
 	zxc, qbit_env = zx_semantics(flattened_program)
+```
 which you can visualize using
+```
    pyzx.draw(zxc)
+```
 and transform back into a CQ- program by using
+```
    new_statements        = list(statements_from_zxc(zxc2,qbits_env))
    transformed_prog_tree = rewrite_Qprogram_statements(original_prog_tree,new_statements)
+```
+You will need to do a `git pull` to make sure you have the newest files.
 
 ### Exercises
-1. Go through the steps in the notebook datalab26.3.ipynb: 
- - Parse and partially evaluate initialize.cq to the coefficients that yield ||a||^2 = 1/2 + 1/4 + 1/6 + 1/12 = 1.
+1. Go through the steps in the notebook `datalab26.3.ipynb`: 
+ - Parse and partially evaluate initialize.cq to the coefficients that yield `||a||^2 = 1/2 + 1/4 + 1/6 + 1/12 = 1`.
  - Build the PyZX circuit using zx_semantics and convert into a ZX diagram graph
  - Apply the ZX rewrite rules one by one until the ZX diagram is fully reduced
    (should remove all CNOT gates in this instance). In each step, refer to 
    Appendix A in https://arxiv.org/pdf/2012.13966.pdf and check the step by hand,
    in order to understand the tranformation. This is the main task.
- - Reconstruct the CQ- program and check that both the original program and the transform compute the correct amplitudes (using simulate.py as shown).
+ - Reconstruct the CQ- program and check that both the original program and the transform compute the correct amplitudes (using `simulate.py` as shown).
 All this is contained in the notebook.
 2. Add a ZX optimization stage in your CQ compiler before the routing stage, using the components from the notebook. 
 3. Run for a variety of inputs and check that you get semantically equivalent transformed programs.
