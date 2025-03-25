@@ -217,11 +217,15 @@ def show_gate(g):
             return "H"
         case ['SX']:
             return "SX"            
+        case ['SY']:
+            return "SY"            
+        case ['SZ']:
+            return "SZ"                            
         case ["rgate",_]:
             rgate, angle_exp = g.children
             [R] = rgate.children
             se = show_exp(angle_exp)
-            return f"{R}({se})"
+            return f"{R.value}({se})"
         case _:
             raise Exception(f"Unrecognized rule {rule} in gate {g}")
 
