@@ -35,7 +35,7 @@ def zx_program(P):
     for s in stats.children:
         zx_statement(s, qbits_env, C)
 
-    return C
+    return C, qbits_env
     
 # 1+2-qubit matrix helper functions
 # Single-qubit gate semantics
@@ -64,15 +64,29 @@ def zx_qupdate(qupdate: Tree, qbits_env: dict, C: Circuit):
 
                     try:
                         angle = evaluate_exp(angle_exp, {})                
-                        angle_fraction = angle/np.pi # PyZX uses angles in fractions of pi
+                        angle_fraction = Fraction(angle/np.pi) # PyZX uses angles in fractions of pi
                     except Exception as e:
                         raise Exception(f"zx_qupdate: Cannot evaluate angle {show_exp(angle_exp)} in {show_gate(gate)}")
             
                     match(rtoken.value):
                         case 'Rx':
+                            # print(f"Rx: {angle_fraction}")
+                            # C.add_gate('H',qbit_k)
+                            # C.add_gate('ZPhase',qbit_k,phase=angle_fraction)
+                            # C.add_gate('H',qbit_k)
+                            # return C
                             return C.add_gate('XPhase',qbit_k,phase=angle_fraction)
                     
                         case 'Ry':
+                            # C.add_gate('H',qbit_k)
+                            # C.add_gate('ZPhase',qbit_k,phase=Fraction(1,2))
+                            # C.add_gate('H',qbit_k)
+                            # C.add_gate('NOT',qbit_k)
+                            # C.add_gate('ZPhase',qbit_k,phase=angle_fraction)
+                            # C.add_gate('H',qbit_k)
+                            # C.add_gate('ZPhase',qbit_k,phase=Fraction(1,2))                           
+                            # C.add_gate('H',qbit_k)
+                            # return C
                             return C.add_gate('YPhase',qbit_k,phase=angle_fraction)                    
                     
                         case 'Rz':
@@ -98,7 +112,7 @@ def zx_controlled_qupdate(qupdate: Tree, control_lval: Tree, qbits_env: dict, C:
 
             try:
                 angle = evaluate_exp(angle_exp, {})              
-                angle_fraction = Fraction(angle/np.pi)
+                angle_fraction2 = Fraction((angle/2)/np.pi)
             except Exception as e:
                 raise Exception(f"zx_controlled_update: Cannot evaluate angle {show_exp(angle_exp)} in {show_gate(gate)}")
             
@@ -106,15 +120,15 @@ def zx_controlled_qupdate(qupdate: Tree, control_lval: Tree, qbits_env: dict, C:
                 case 'Rx':
                     raise Exception(f"zx_controlled_qupdate: Rx not implemented")
                 case 'Ry':
-                    C.add_gate(f"YPhase",target_qbit,phase=angle_fraction/2)
+                    C.add_gate(f"YPhase",target_qbit,phase=angle_fraction2)
                     C.add_gate(f"CNOT",control_qbit,target_qbit)
-                    C.add_gate(f"YPhase",target_qbit,phase=-angle_fraction/2)
+                    C.add_gate(f"YPhase",target_qbit,phase=-angle_fraction2)
                     C.add_gate(f"CNOT",control_qbit,target_qbit)
                     return C
                 case 'Rz':
-                    C.add_gate(f"ZPhase",target_qbit,phase=angle_fraction/2)
+                    C.add_gate(f"ZPhase",target_qbit,phase=angle_fraction2)
                     C.add_gate(f"CNOT",control_qbit,target_qbit)
-                    C.add_gate(f"ZPhase",target_qbit,phase=-angle_fraction/2)
+                    C.add_gate(f"ZPhase",target_qbit,phase=-angle_fraction2)
                     C.add_gate(f"CNOT",control_qbit,target_qbit)                    
                     return 
         case _:
@@ -151,3 +165,68 @@ def zx_statement(s: Tree, qbits_env, C: Circuit):
         print(f"simulate_statement: {e} when evaluating {rule} in {s.pretty()}")
         raise e
 
+
+def statements_from_zxc(C: Circuit, qbits_env: dict):
+    qbits_reverse_env = {v:k for k,v in qbits_env.items()}    
+    
+    for g in C.gates:
+        lval  = make_lval_from_name( qbits_reverse_env[g.target] )
+        if(g.name[1:] == "Phase"):
+            axis = g.name[0].lower()
+            phase_num,phase_denom = g.phase.numerator, g.phase.denominator
+
+            match((phase_num,phase_denom)):
+                case (1,2):
+                    gate = make_gate(f"S{axis}")
+                case (1,4):
+                    gate = make_gate(f"T{axis}")
+                case _:
+                    angle = phase_num * np.pi / phase_denom
+                    gate  = make_gate(f"R{axis}", angle)
+        
+            yield make_statement([make_qupdate(gate, lval)])
+        else:
+            match(g.name):
+                case 'NOT':
+                    gate = make_gate('not')
+                    yield make_statement([make_qupdate(gate, lval)])
+                case 'HAD':
+                    gate = make_gate('H')
+                    yield make_statement([make_qupdate(gate, lval)])
+                case 'SWAP':
+                    lval2 = make_lval_from_name( qbits_reverse_env[g.control] )
+                    yield make_statement([make_swap(lval, lval2)])
+                case 'CNOT':
+                    lval2 = make_lval_from_name( qbits_reverse_env[g.control] )
+                    yield make_statement([make_controlled_qupdate(lval2, lval, make_gate('not'))])
+                case 'CZ':
+                    lval2 = make_lval_from_name( qbits_reverse_env[g.control] )
+                    yield make_statement([make_controlled_qupdate(lval2, lval, make_gate('Z'))])
+                case _:
+                    raise Exception(f"statements_from_zxc: Unrecognized gate {g.name} in {g}")
+    
+    return
+
+def rewrite_Qprogram_statements(Qprog_tree: Tree, new_statements: list):
+    new_prog = deepcopy(Qprog_tree)
+    
+    main = new_prog.children[0]
+    name, params, statement = main.children
+    block = statement.children[0]
+    decls, stats = block.children
+
+    stats.children = new_statements
+    
+    return new_prog
+
+def zx_rewrite_Qprogram(Qprog_tree: Tree, C: Circuit, qbits_env: dict):
+    new_statements = list(statements_from_zxc(C, qbits_env))
+    for i,s in enumerate(new_statements):
+        print(i,show_statement(s))
+    return rewrite_Qprogram_statements(Qprog_tree, new_statements)
+
+    
+
+
+        
+            
