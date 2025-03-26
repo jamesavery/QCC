@@ -7,10 +7,15 @@ ATPL is an annual seminar course on up-to-date research topics in or directly re
 programming language theory and technology. Last year and next, the topic is hybrid quantum-classical programming models, HQC language-design, and HQC compiling techniques. However, you will individually get to choose a particular topic to delve into - either picked from a selection suggested by us, or chosen freely by yourself. The exam form is a written mini-project (and code where appropriate) with an oral defense. Especially if you want to do an MSc thesis on a related topic, this can be excellent preliminary work.
 
 
-# 26/3/2025: Week 8 [Updated lab exercise info 25/3]
+# 26/3/2025: Week 8 [Updated lab exercise info 25/3, Lecture slides 26/3]
 ## Topic: Optimization techniques and the ZX Calculus
 
 Robin Kaarsgaard Sales from SDU will lecture Wednesday 3/4 on ZX Calculus and circuit optimization. I will be there for the lab session to help out with your code as usual.
+
+## Lecture slides and papers:
+
+Lecture slides here: http://www.nbi.dk/~avery/QCC/ZX-Lecture.pdf
+
 
 ## Reading instructions:
 
