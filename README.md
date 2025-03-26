@@ -12,7 +12,7 @@ programming language theory and technology. Last year and next, the topic is hyb
 
 Robin Kaarsgaard Sales from SDU will lecture Wednesday 3/4 on ZX Calculus and circuit optimization. I will be there for the lab session to help out with your code as usual.
 
-## Lecture slides and papers:
+## Lecture slides
 
 Lecture slides here: http://www.nbi.dk/~avery/QCC/ZX-Lecture.pdf
 
