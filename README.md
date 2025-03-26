@@ -1,3 +1,12 @@
+# 26/3/2025: Advertisement!
+If you enjoy the topic of quantum programming languages and quantum compilers, consider joining us this winter 
+for Advanced Topics in Programming Languages: Hybrid Quantum-Classical Programming.
+The course description is here: https://kurser.ku.dk/course/NDAK24007U - November 17th to January 25th.
+
+ATPL is an annual seminar course on up-to-date research topics in or directly related to
+programming language theory and technology. Last year and next, the topic is hybrid quantum-classical programming models, HQC language-design, and HQC compiling techniques. However, you will individually get to choose a particular topic to delve into - either picked from a selection suggested by us, or chosen freely by yourself. The exam form is a written mini-project (and code where appropriate) with an oral defense. Especially if you want to do an MSc thesis on a related topic, this can be excellent preliminary work.
+
+
 # 26/3/2025: Week 8 [Updated lab exercise info 25/3]
 ## Topic: Optimization techniques and the ZX Calculus
 
